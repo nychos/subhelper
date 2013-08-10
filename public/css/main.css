@@ -1,0 +1,12 @@
+/* 
+    Document   : main
+    Created on : Aug 10, 2013, 2:47:31 PM
+    Author     : nychos
+    Description:
+        Purpose of the stylesheet follows.
+*/
+
+body {margin: 0px; padding: 0px;}
+#wrapper {width: 800px; position: relative;margin: 0 auto 0;}
+#wrapper > * {position: inherit; border : 1px solid whitesmoke;}
+

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Subhelper</title>
+       <script src="/js/jquery-1.9.1.js"></script>
+       <script src="/js/jquery-ui-1.10.3.custom.js"></script>
+        <script src="/js/jquery.mousewheel.js"></script>
+        <link href="/css/ui-lightness/jquery-ui-1.10.3.custom.css" rel="stylesheet" type="text/css" />
+        <link href="/css/main.css" rel="stylesheet" type="text/css" />
+    </head>
+    <body>
+        <div id="wrapper">
+            <div id="header">Header</div>
+            <div id="content">
+                <?php echo $this->layout()->content; ?>
+            </div>
+            <div id="aside">Aside</div>
+            <div id="footer">
+                <span>Copyright <?php echo date('d-M-Y'); ?></span>
+            </div>
+        </div>
+    </body>
+</html>
