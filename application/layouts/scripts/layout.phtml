@@ -2,22 +2,46 @@
 <html>
     <head>
         <title>Subhelper</title>
+       <!-- scripts -->
        <script src="/js/jquery-1.9.1.js"></script>
        <script src="/js/jquery-ui-1.10.3.custom.js"></script>
-        <script src="/js/jquery.mousewheel.js"></script>
-        <link href="/css/ui-lightness/jquery-ui-1.10.3.custom.css" rel="stylesheet" type="text/css" />
-        <link href="/css/main.css" rel="stylesheet" type="text/css" />
+       <script src="/js/sammy.js"></script>
+       <script src="/js/sammy.template.js"></script>
+       <script src="/js/main.js"></script>
+       
+       <!-- styles -->
+       <link href="/css/ui-lightness/jquery-ui-1.10.3.custom.css" rel="stylesheet" type="text/css" />
+       <link href="/css/main.css" rel="stylesheet" type="text/css" />
     </head>
     <body>
         <div id="wrapper">
-            <div id="header">Header</div>
+            <div id="header">
+                <div id="logo">Subhelper</div>
+                <div id="uploadSubtitle">
+                    <form name="upload_big" id="upload_big" class="uploaderForm" method="post" enctype="multipart/form-data" action="index/upload" target="upload_target">
+                        <div class="fileWrapper">
+                                <a class="fileButton">Upload image</a>
+                                <input name="subtitle" id="file" class="fileInput" size="27" type="file" />	
+                        </div>        
+                        <input type="submit" name="action" value="Upload Image now" class="inputSubmit" />
+                    </form>
+                    <div id="notice" class="notice">Wait...</div>
+                     <!-- hidden iframe begin -->
+                        <iframe id="upload_target" name="upload_target" src=""></iframe>
+                    <!-- hidden iframe end -->
+                </div>
+            </div>
             <div id="content">
                 <?php echo $this->layout()->content; ?>
             </div>
-            <div id="aside">Aside</div>
+            <div id="aside">
+                <div id="original"></div>
+                <div id="result"></div>
+            </div>
             <div id="footer">
                 <span>Copyright <?php echo date('d-M-Y'); ?></span>
             </div>
         </div>
+        <script src="/js/uploadingSubtitle.js"></script>
     </body>
 </html>

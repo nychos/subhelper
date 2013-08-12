@@ -9,4 +9,22 @@
 body {margin: 0px; padding: 0px;}
 #wrapper {width: 800px; position: relative;margin: 0 auto 0;}
 #wrapper > * {position: inherit; border : 1px solid whitesmoke;}
-
+iframe {display: none;}
+#header {height: 50px;}
+#aside {height: 200px; overflow: scroll;}
+#aside > div {width: 380px; position: relative; float: left;}
+#logo {position: relative; float: left;}
+/*** styling the input type=file ***/
+.fileWrapper {float:left; width:104px; height:24px;position:relative;
+overflow:hidden;}
+.fileWrapper input.fileInput {height:24px;position:absolute;
+top:0;right:0;opacity:0;filter:alpha(opacity=0);cursor:pointer;}
+a.fileButton {display:block;float:left;padding:2px 4px;line-height:20px;
+width:96px;height:20px;text-align:center;font-size:12px;cursor:pointer;
+background:#07134A;color:#ffffff;}
+.fileWrapper:hover a.fileButton {background-color:#2F3A69;}
+.notice {display:none;}
+input.inputSubmit {display:none;}
+/*input.inputSubmit {display:block;float:left;clear:left;padding:4px 6px;line-height:20px;
+width:auto;text-align:center;font-size:12px;cursor:pointer;font-family:'Verdana';
+background:#07134A;color:#ffffff;border:none;outline:none;}*/
