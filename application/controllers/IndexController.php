@@ -3,6 +3,8 @@
 class IndexController extends Zend_Controller_Action
 {   
     protected $_words = array();//масив усіх слів субтитра
+    protected $_wordPattern =  "~[a-zA-Z]+(['-][a-zA-Z]+)*~i";
+    
     public function preDispatch() 
     {
         //turn off views for all actions
@@ -39,22 +41,43 @@ class IndexController extends Zend_Controller_Action
     }
     public function getWords()
     {
-        return $this->_words;
+        if(Zend_Registry::isRegistered('words')){
+            return Zend_Registry::get('words');
+        }
+        return false;
     }
     /**
      * Створює карту слів
      * @param String $phrases
+     * @return Array $this->_words - карта слів, містить посилання на номери фраз
      */
     public function breakPhrasesIntoWords($phrases)
     {
-        $pattern = "~[a-zA-Z]+(['-][a-zA-Z]+)*~i";
+        $testArr = array();
         foreach($phrases as $index => $phrase){
-            preg_match($pattern, $phrase, $words, PREG_OFFSET_CAPTURE);//пошук підстроки
+            preg_match_all($this->_wordPattern, $phrase, $words, PREG_OFFSET_CAPTURE);//пошук підстроки
             foreach($words[0] as $word){
-                 $this->checkWordList($word, $index);
+                 $word = $word[0];
+                 if(!is_numeric($word))$testArr[] = $this->checkWordList($word, $index);
             }
         }
         return $this->getWords();
+    }
+    /**
+     * Обгортає слова у фразах тегами, щоб можна потім було їх ідентифікувати
+     * на клієнтській стороні.
+     * Можна було це зробити на клієнті, але я надав перевагу серверу
+     * @param type $phrases
+     * @return Array - масив з фразами, слова в яких обгорнуті тегами
+     */
+    public function wrapWordsInPhrases($phrases)
+    {
+        $newPhrasesWithWrappedWords = [];
+        foreach($phrases as $i => $phrase){
+            $replacement = "<span>$0</span>";
+            $newPhrasesWithWrappedWords[] = preg_replace($this->_wordPattern, $replacement, $phrase);
+        }
+        return $newPhrasesWithWrappedWords;
     }
     /**
      * Шукає слово у словнику, якщо знаходить, дописує номер строки
@@ -62,43 +85,43 @@ class IndexController extends Zend_Controller_Action
      * @param Integer $index - номер строки, де дане слово міститься
      * @return boolean | Array
      */
-    public function checkWordList($word, $index){
-        
+    public function checkWordList($word, $index = false)
+    {
         if(!(is_string($word) && strlen($word) > 0))return false;
         $hasIndex = is_numeric($index);
         $wordIsInDictionary = false;
         $word = strtolower($word);
-        if(count($this->_words)){
-            foreach($this->_words as $i => $wordData){
-               
-                if(strtolower($wordData['word']) === $word){
-                   $wordIsInDictionary = true;
-                   if($hasIndex){
-                       array_push($this->_words[$i]['source'], $index);
-                   }else {
-                       return $wordData;
-                   }
+        $registry = Zend_Registry::getInstance();
+        
+        if(Zend_Registry::isRegistered('words')){
+            
+            $words = $registry['words'];
+            if(count($words)){
+                foreach($words as $i => $wordData){
+
+                    if(strtolower($wordData['word']) === $word){
+                       $wordIsInDictionary = true;
+                       if($hasIndex){
+                           array_push($registry['words'][$i]['source'], $index);
+                       }else {
+                           return $wordData;
+                       }
+                    }
                 }
             }
         }
         //добавляємо слово в словник, якщо йому нема еквівалентів
         if($hasIndex === true && $wordIsInDictionary === false){
-            $this->_words[] = array('word' => $word, 'source' => array($index));
+            $registry['words'][] = array('word' => $word, 'source' => array($index));
         }
-        return false;
+        return "Count is : ".count($registry['words']);
     }
-    public function getsubtitleAction()
-    {   
-//        $sub = new Application_Model_Subtitles();
-//        echo "<pre>";
-//        var_dump(count($sub->getSubtitleById($this->getRequest()->getParam('id'))));
-//        echo "</pre>";
-//        die();
-         //виключає layout
+    public function getWordInfoAction()
+    {
          $this->_helper->layout()->disableLayout();
-         //якщо запит прийшов по ajax
          if($this->getRequest()->isXmlHttpRequest()){
-             $id =   $image = $this->getRequest()->getParam('id');
+             $word = $this->getRequest()->getParam('word');
+             $id = $this->getRequest()->getParam('id');
              $sub = new Application_Model_Subtitles();
              $row = $sub->getSubtitleById($id);
              //1. витягнули субтитри
@@ -107,13 +130,47 @@ class IndexController extends Zend_Controller_Action
              $phrases = $this->breakIntoPhrases($subtitle);
              //3. витягнули карту слів
              $words = $this->breakPhrasesIntoWords($phrases);
+             //витягуємо карту слова
+             $wordArr = $words;//$this->checkWordList($word);
+             if($wordArr){
+                $this->message("Word map is fetched", $wordArr);
+             }else {
+                 $this->message("Word not found in word list", $wordArr, "error");
+             }
+         }
+    }
+    /**
+     * Витягує субтитр та формує фрази і слова з нього
+     * якщо клієнт має локальне сховище, тоді записуємо дані в нього, в інакшому випадку
+     * в Сесію
+     */
+    public function getSubtitleAction()
+    {
+         //виключає layout
+         $this->_helper->layout()->disableLayout();
+         //якщо запит прийшов по ajax
+         if($this->getRequest()->isXmlHttpRequest()){
+             $id = $this->getRequest()->getParam('id');
+             //if session entry exists with such subtitle id fetched that data otherwise fetched from db
+             $sub = new Application_Model_Subtitles();   
+             $row = $sub->getSubtitleById($id);
+             //1. витягнули субтитри
+             $subtitle = file_get_contents(PUBLIC_PATH.$row->subtitle);
+             //2. розбили у фрази
+             $phrases = $this->breakIntoPhrases($subtitle);
+             //3. витягнули карту слів
+             $words = $this->breakPhrasesIntoWords($phrases);
+             $newPhrases = $this->wrapWordsInPhrases($phrases);
+             $title = str_replace("/uploads/", "", $row->subtitle);
+             //ці дані потрібно записати в сесію
              $data = array(
                  'id' => $row->id,
-                 'title' => $row->subtitle,
+                 'title' => $title,
                  'created' => $row->created,
                  'id_user' => $row->id_user,
-                 'subtitle' => $subtitle,
-                 'result' => json_encode($words)
+                 'subtitle' => "sub",//$subtitle,
+                 'phrases' => $newPhrases,
+                 'wordMap' => $words,
              );
              if(count($row)){
                  $this->message("Subtitle successfully fetched", $data);
@@ -127,6 +184,12 @@ class IndexController extends Zend_Controller_Action
     {
          echo json_encode(array("status" => $status, "message" => $message, "data" => $data), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
          die();
+    }
+    public function log($message, $data = "no data")
+    {
+        $filename = PUBLIC_PATH."/log.txt";
+        $data = $message." --> ".$data;
+        file_put_contents($filename, $data, FILE_APPEND);
     }
     public function uploadAction()
     {   
