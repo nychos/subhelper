@@ -11,7 +11,7 @@ body {margin: 0px; padding: 0px;}
 #wrapper > * {position: inherit; border : 1px solid whitesmoke;}
 iframe {display: none;}
 #header {height: 50px;}
-#aside {height: 200px; overflow: scroll;}
+#aside {height: 200px; overflow: scroll; width: inherit;}
 #aside > div {width: 380px; position: relative; float: left;}
 #logo {position: relative; float: left;}
 /*** styling the input type=file ***/
@@ -25,6 +25,16 @@ background:#07134A;color:#ffffff;}
 .fileWrapper:hover a.fileButton {background-color:#2F3A69;}
 .notice {display:none;}
 input.inputSubmit {display:none;}
-/*input.inputSubmit {display:block;float:left;clear:left;padding:4px 6px;line-height:20px;
-width:auto;text-align:center;font-size:12px;cursor:pointer;font-family:'Verdana';
-background:#07134A;color:#ffffff;border:none;outline:none;}*/
+
+.activeWord {font-weight: bold; text-decoration: underline;}
+/*filter*/
+.filter {background-color: whitesmoke; border-color: #ccc; max-width: 100px;}
+.filter_body {width: 100%;}
+.close_filter {
+    float: right;
+    margin-right: -10px;
+    margin-top: -10px;
+    position: relative;
+}
+.close_filter img {border: 1px solid #ccc;}
+.word-dialog {border: 1px solid #91BE3F; position: absolute;background-color: whitesmoke; width: 300px;}

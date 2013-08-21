@@ -3,9 +3,8 @@
             app = $.sammy('#content', function() {
             storage = new Storage();
             var phrasesContainer = $('#aside #result');
-            function unescape(str) {
-                return String(str).replace(/&lt;/g, "<").replace(/&gt;/g, ">");
-            }
+            var originalContainer = $('#aside #original');
+            function unescape(str) { return String(str).replace(/&lt;/g, "<").replace(/&gt;/g, ">");}
                 // include the plugin
                 this.use('Template', 'tmpl');
 
@@ -15,16 +14,53 @@
                                    // Trigger post load events and hooks
                                    //відображаємо фрази
                                    this.trigger('show-phrases', {id : 1});
-//                                    $.ajax({
-//                                        url : 'index/get-subtitle/',
-//                                        data : {id : 1},
-//                                        type : 'post',
-//                                        success : function(response){
-//                                            console.log(response);
-//                                        }
-//                                    });
                     });
                 });
+                 /**
+                * Показує імя фільтра з кнопкою закриття
+                */
+               this.bind('show-filter', function(e,data){
+                   $('.filter').remove();
+                   $('.word-dialog').remove();
+                   //передаємо назву фільтра та функцію, що робити по закриті фільтра
+                   this.render('templates/filter.tmpl', {data : data}).appendTo(this.$element()).then(function(content){
+                       //console.log(content);
+                       //кнопка закриття фільтра
+                       $('.close_filter').bind('click', function(){
+                           $('.word-dialog').remove();
+                           $('.phrase').show().children().removeClass('activeWord');
+                           $(this).parent().remove();//видаляємо фільтр
+                       });
+                   });
+               });
+               /**
+                * Відображає діалогове меню для слова
+                */
+               this.bind('show-word-dialog', function(e, data){
+                   $('.word-dialog').remove();
+                   this.render('templates/word-dialog.tmpl', {data : data}).prependTo($('#result')).then(function(content){
+                       var wordDialog = $('.word-dialog');
+                       wordDialog.css({left : data.coords.left, top: data.coords.top + 20});
+                       wordDialog.find('form').bind('submit', function(e){
+                          e.preventDefault();
+                          var data = $(this).serializeArray()[0];
+                          console.log(data);
+                          $.ajax({
+                             url : 'index/check-translation/',
+                             type : 'post',
+                             data : {"translation" : data.value},
+                             success : function(response){
+                                 console.log(response);
+                             }
+                          });
+                       });
+                       $('#showWordPhrases').bind('click', function(){
+                          app.trigger('show-filter', data);
+                          //TODO: залишити тільки фрази зі словом
+                          app.sub.showSimilarPhrases(data.filterName, $('.phrase'));
+                        });
+                   });
+               });
                 /**
                  * Показує фрази зі субтитрів
                  * @type Arguments
@@ -32,7 +68,8 @@
                 this.bind('show-phrases', function(e, data){
                  //перевіряємо локальне сховище 
                  var phraseObj = storage.checkItem("subtitles", data.id);
-                 app.phrases = phraseObj;
+                 app.sub = new Subtitle(phraseObj);
+                 //app.phrases = phraseObj;
                  if(phraseObj){
                         //витягуємо дані та вставляємо в DOM
                         this.render('templates/phrases.tmpl', {data : phraseObj}).then(function(content){
@@ -62,45 +99,16 @@
                 });
                 //пошук фраз по слову
                 this.bind('phrases-loaded', function(){
-                    console.log("phrases-loaded");
+                    //при нажаті на слово
                     $('#result').on('click','span', function(){
-                         var word = $(this).text().toLowerCase();
-                         //console.log(app.phrases);
-                         var data = app.phrases;
-                         console.log(data);
-                         var source = findWord(word, data.wordMap);
-                         console.log(source);
-                         var phrases = fetchPhrases(source);
-                         //console.log(phrases);
-                         function findWord(word, wordMap){
-                             for(var i in wordMap){
-                                if(wordMap[i].word.toLowerCase() === word){
-                                    console.log("Word found!");
-                                    console.log(wordMap[i]);
-                                    return wordMap[i].source;
-                                }
-                            }
-                            throw new Error("Word " + word + " not found");
-                         }
-                         function fetchPhrases(source){
-                             if(source){
-                                 var phrases = [];
-                                 for(var i in source){
-                                     console.log(data.phrases[source[i]]);
-                                     $('.phrase').each(function(j){
-                                        if(source[i] === j)$(this).css("backgroundColor", "yellow");
-                                     });
-                                    phrases.push(data.phrases[i]);
-                                 }
-                                 return phrases;
-                             }
-                             throw new Error("source is undefined");
-                         }
-                         
-                         
+                        var $this = $(this);
+                         var word = $this.text().toLowerCase();
+                         //посилання на фрази, самі фрази та їх кількість
+                         var obj = app.sub.fetchWordPhrases(word);
+                         //відображення діалогового вікна для слова
+                         app.trigger('show-word-dialog', {filterName : word, count : obj.count, coords : $this.position()});
                      }); 
                 });
-
                 });//app end
 
                 app.run('#/');

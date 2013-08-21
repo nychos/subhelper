@@ -47,9 +47,33 @@ class IndexController extends Zend_Controller_Action
         return false;
     }
     /**
+     * Перевірка перекладу слова
+     */
+    public function checkTranslationAction()
+    {
+         $this->_helper->layout()->disableLayout();
+         if($this->getRequest()->isXmlHttpRequest()){
+             $translation = $this->getRequest()->getParam('translation');
+             $word = $this->getRequest()->getParam('word');
+             $id_user = 1; //TODO: get user id from Zend_Session
+             if(isset($translation)){
+                 /*TODO:
+                  *  1. пошук слова у словнику користувача
+                  *  2. витягуємо всі переклади слова шукаємо по них
+                  *  3. якщо слова немає, то перевіряємо в онлайн словнику переклад
+                  *  4. якщо переклад співпав, інформуємо користувача, пропонуємо інші варіанти, якщо вони є
+                  */
+                 $this->message("Translation", $translation);
+                 
+             }else {
+                 $this->message("translation is undefined", false, "error");
+             }
+         }
+    }
+    /**
      * Створює карту слів
      * @param String $phrases
-     * @return Array $this->_words - карта слів, містить посилання на номери фраз
+     * @return Array карта слів, містить посилання на номери фраз
      */
     public function breakPhrasesIntoWords($phrases)
     {
@@ -168,7 +192,7 @@ class IndexController extends Zend_Controller_Action
                  'title' => $title,
                  'created' => $row->created,
                  'id_user' => $row->id_user,
-                 'subtitle' => "sub",//$subtitle,
+                 'subtitle' => $subtitle,
                  'phrases' => $newPhrases,
                  'wordMap' => $words,
              );
