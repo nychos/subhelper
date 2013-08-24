@@ -3,7 +3,6 @@
             app = $.sammy('#content', function() {
             storage = new Storage();
             var phrasesContainer = $('#aside #result');
-            var originalContainer = $('#aside #original');
             function unescape(str) { return String(str).replace(/&lt;/g, "<").replace(/&gt;/g, ">");}
                 // include the plugin
                 this.use('Template', 'tmpl');
@@ -11,7 +10,6 @@
                 this.get('#/', function(context) {
                     this.swap('');
                     context.render('templates/main.tmpl').appendTo(context.$element()).then(function(){
-                                   // Trigger post load events and hooks
                                    //відображаємо фрази
                                    this.trigger('show-phrases', {id : 1});
                     });
@@ -38,25 +36,41 @@
                 */
                this.bind('show-word-dialog', function(e, data){
                    $('.word-dialog').remove();
+                   //$('#translationCheckDialog').remove();
+                   var $this = this;
                    this.render('templates/word-dialog.tmpl', {data : data}).prependTo($('#result')).then(function(content){
                        var wordDialog = $('.word-dialog');
                        wordDialog.css({left : data.coords.left, top: data.coords.top + 20});
                        wordDialog.find('form').bind('submit', function(e){
                           e.preventDefault();
-                          var data = $(this).serializeArray()[0];
-                          console.log(data);
+                          var data = $(this).serialize();
+                          var arr = $(this).serializeArray();
+                          var word = arr[1].value;
+                          var translation = arr[0].value;
                           $.ajax({
-                             url : 'index/check-translation/',
+                             url : 'index/find-translation/',
                              type : 'post',
-                             data : {"translation" : data.value},
+                             data : data,
                              success : function(response){
-                                 console.log(response);
+                                 try{
+                                    var obj = $.parseJSON(response);
+                                    if(obj.status === "success"){
+                                        console.log(obj);
+                                        $this.render('templates/translation-check-dialog.tmpl', {data : obj.data, word : word, translation : translation}).prependTo($('#result')).then(function(content){
+                                           //console.log(content);
+                                        });
+                                    }else if(obj.status === "error"){
+                                        console.log(obj.message);
+                                    }
+                                 }catch(e){
+                                     console.log(e);
+                                 }
                              }
                           });
                        });
+                       //показати всі фрази зі словом
                        $('#showWordPhrases').bind('click', function(){
                           app.trigger('show-filter', data);
-                          //TODO: залишити тільки фрази зі словом
                           app.sub.showSimilarPhrases(data.filterName, $('.phrase'));
                         });
                    });
@@ -68,9 +82,9 @@
                 this.bind('show-phrases', function(e, data){
                  //перевіряємо локальне сховище 
                  var phraseObj = storage.checkItem("subtitles", data.id);
-                 app.sub = new Subtitle(phraseObj);
-                 //app.phrases = phraseObj;
+
                  if(phraseObj){
+                      app.sub = new Subtitle(phraseObj);
                         //витягуємо дані та вставляємо в DOM
                         this.render('templates/phrases.tmpl', {data : phraseObj}).then(function(content){
                             phrasesContainer.html(unescape(content));
@@ -83,9 +97,8 @@
                             data : {id : data.id},
                             type : 'post',
                             success : function(response){
-                                console.log(response);
+                                //console.log(response);
                                var obj = $.parseJSON(response);
-                               console.log(obj);
                                if(obj.status === "success"){
                                    //додати субтитр якщо ідентифікатор субтитра унікальний
                                    storage.add("subtitles",obj.data);

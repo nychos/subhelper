@@ -47,28 +47,86 @@ class IndexController extends Zend_Controller_Action
         return false;
     }
     /**
-     * Перевірка перекладу слова
+     * Шукає слово та переклад до нього в словнику користувача
+     * @param String $word
+     * @return Array - масив перекладів | Boolean - false якщо немає слова
      */
-    public function checkTranslationAction()
+    public function findTranslationAction()
     {
          $this->_helper->layout()->disableLayout();
          if($this->getRequest()->isXmlHttpRequest()){
-             $translation = $this->getRequest()->getParam('translation');
-             $word = $this->getRequest()->getParam('word');
-             $id_user = 1; //TODO: get user id from Zend_Session
-             if(isset($translation)){
-                 /*TODO:
-                  *  1. пошук слова у словнику користувача
-                  *  2. витягуємо всі переклади слова шукаємо по них
-                  *  3. якщо слова немає, то перевіряємо в онлайн словнику переклад
-                  *  4. якщо переклад співпав, інформуємо користувача, пропонуємо інші варіанти, якщо вони є
-                  */
-                 $this->message("Translation", $translation);
-                 
-             }else {
-                 $this->message("translation is undefined", false, "error");
-             }
+            $translation = trim($this->getRequest()->getParam('translation'));
+            $word = $this->getRequest()->getParam('word');
+            $id_user = 1; //TODO : from Session
+            $words = new Application_Model_Words();
+            $package = array();
+            //перевіряє чи переклад співпав з тим що в користувацькій базі
+            function isTranslationCorrect($self, $translation, $wordData, $matchedMessage, $notMatchedMessage){
+                 $isMatched = $self->checkTranslation($wordData, $translation);
+                 if($isMatched){
+                     return array('match' => 1, 'message' => $matchedMessage);
+                 }else {
+                     return array('match' => 0, 'message' => $notMatchedMessage);
+                 }
+            }
+            //якщо знайдено у власному словнику
+            if($myTranslation = $words->findMyWord($word, $id_user)){
+                //перевірити на правильність
+                $isMatched = isTranslationCorrect($this, $translation,$myTranslation, "Переклад співпав з вашим власним", "Переклад не співпав, добавте новий або перевірте правильність");
+                $myTranslation['isMatched'] = $isMatched;
+                $package['my'] = $myTranslation;
+            }
+            //робимо пошук в загальному словнику
+            if($usersTranslation = $words->findUsersWord($word, $id_user)){
+                //перевірити на правильність
+                $isMatched = isTranslationCorrect($this, $translation,  $usersTranslation, "Переклад, знайдений в загальному словнику, співпав", "Переклад не співпав з тими що містяться в загальному словнику");
+                $usersTranslation['isMatched'] = $isMatched;
+                $package['common'] = $usersTranslation;
+            }
+            //var_dump($package);die();
+            if(count($package)){
+                $this->message("Переклади витягнені з ".count($package). " джерел", $package);
+            }else {
+                $this->message("Переклад не знайдено в базі", array("word" => $word, "translation" => $translation));
+            }
          }
+    }
+    public function innerFind($arr, $translation, $compareStr = false)
+    {
+            if(count($arr) > 1){
+                foreach($arr as $value){
+                    //$result[] = $value." === ".$translation. " : ".($value === $translation);
+                    if(trim($value) === $translation)return true;
+                }
+            }else {
+                if(!$compareStr) $compareStr = $arr[0];
+                //$result[] = $compareStr." === ".$translation. " : ".($compareStr === $translation);
+                return trim($compareStr) === $translation;
+            }
+            //return $result;
+            return false;
+    }
+    /**
+     * Перевіряє чи переклад введений користувачем являється правильним
+     * @param Array $arr - масив з перекладами
+     * @param String $translation - переклад введений користувачем
+     * @return boolean
+     */
+    public function checkTranslation($arr, $translation)
+    {
+        if(isset($arr['translation'])){
+            $translationArr = explode(",", $arr['translation']);
+            $result = $this->innerFind($translationArr, $translation, false);
+            return $result;
+        }else {
+            foreach($arr as $val){
+                $translationStr = $val['translation'];
+                $translationArr = explode(",", $translationStr);
+                $result = $this->innerFind($translationArr, $translation, $translationStr);
+                if($result){return true;}
+            }
+        }
+        return false;
     }
     /**
      * Створює карту слів

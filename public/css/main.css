@@ -38,3 +38,9 @@ input.inputSubmit {display:none;}
 }
 .close_filter img {border: 1px solid #ccc;}
 .word-dialog {border: 1px solid #91BE3F; position: absolute;background-color: whitesmoke; width: 300px;}
+#translationCheckDialog {position: absolute; background-color: #666666; z-index: 2; border: 1px double #fff;
+width: 400px; left: 400px;
+}
+#translationCheckHeader {font-size: 2em; color: #ccc;}
+#translationCheckBody {color: white;}
+.translationMessage {font-size: 10px; clear: both;}

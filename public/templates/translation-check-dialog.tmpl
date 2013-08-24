@@ -1,0 +1,27 @@
+<div id="translationCheckDialog">
+    <div id="translationCheckHeader">Переклад слова: <strong><%= word %></strong> - <strong><%= translation %></strong></div>
+    <div id="translationCheckBody">
+        <div class="dictionaryType">
+            <div class="dictionaryTitle">My dictionary :</div> <% if(data.my){%><%= data.my.translation %><%} else {%>
+            <div class="noRecords">немає записів</div>
+            <% }%>
+            <div class='translationMessage'>
+               <% if(data.my){ %><%= data.my.isMatched.message %><%}%>
+            </div>
+        </div>
+        <div class="dictionaryType">
+            <div class="dictionaryTitle">Common dictionary : </div> <%  if(data.common){jQuery.each(data.common, function(i, value){
+                if(value.translation){%><%= value.translation %><% } %>
+                <% }); %>
+                <% }else {%>
+                <div class="noRecords">немає записів</div>
+                <% }%>
+            <div class="translationMessage">
+                <% if(data.common){ %> <%= data.common.isMatched.message %><% } %>
+            </div>
+        </div>
+        <div class="dictionaryType">
+            <div class="dictionaryTitle">Online dictionary : </div>
+        </div>
+    </div>
+</div>
