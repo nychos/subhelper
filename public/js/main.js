@@ -56,8 +56,34 @@
                                     var obj = $.parseJSON(response);
                                     if(obj.status === "success"){
                                         console.log(obj);
-                                        $this.render('templates/translation-check-dialog.tmpl', {data : obj.data, word : word, translation : translation}).prependTo($('#result')).then(function(content){
-                                           //console.log(content);
+                                        $('.word-dialog').empty();
+                                        $this.render('templates/translation-check-dialog.tmpl', {data : obj.data, word : word, translation : translation}).prependTo($('.word-dialog')).then(function(content){
+                                           //показати переклад у власному списку
+                                           var my = $('#myDictionary');
+                                           var body = my.find('.dictionaryBody');
+                                           //перевірка перекладу з усіма словами з словнику
+                                           //якщо збігається тоді не пропонувати добавити а просто
+                                          
+                                           var translationDiv = $('<span></span>', {class : 'addTranslation', text : translation});
+                                           //console.log(obj.data.my.isMatched.match);
+                                           //якщо немає співпадінь, тоді пропонуємо добавити слово
+                                           if(obj.data.my && obj.data.my.isMatched.match === 1){
+                                                //TODO: слово співпало
+                                           }else {
+                                               $('#translationCheckHeader')
+                                                .bind('mouseenter', function(){
+                                                    my.find('.noRecords').hide();//приховуємо запис no records
+                                                    app.cacheHtml = body.html();//кешуємо переклади
+                                                    body.append(translationDiv);//добавляємо переклад до списку
+                                               })
+                                               .bind('mouseleave', function(){
+                                                    if(app.cacheHtml){
+                                                        body.html(app.cacheHtml);//витягуємо дані з кешу
+                                                        body.find('.noRecords').show();
+                                                        app.cacheHtml = null;
+                                                    }
+                                               });
+                                           }
                                         });
                                     }else if(obj.status === "error"){
                                         console.log(obj.message);
@@ -113,7 +139,7 @@
                 //пошук фраз по слову
                 this.bind('phrases-loaded', function(){
                     //при нажаті на слово
-                    $('#result').on('click','span', function(){
+                    $('#result').on('click','.phrase span', function(){
                         var $this = $(this);
                          var word = $this.text().toLowerCase();
                          //посилання на фрази, самі фрази та їх кількість

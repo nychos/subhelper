@@ -11,8 +11,8 @@ body {margin: 0px; padding: 0px;}
 #wrapper > * {position: inherit; border : 1px solid whitesmoke;}
 iframe {display: none;}
 #header {height: 50px;}
-#aside {height: 200px; overflow: scroll; width: inherit;}
-#aside > div {width: 380px; position: relative; float: left;}
+#aside {max-height: 400px; overflow: scroll; width: inherit;}
+#aside > div {width: inherit; position: relative; float: left;}
 #logo {position: relative; float: left;}
 /*** styling the input type=file ***/
 .fileWrapper {float:left; width:104px; height:24px;position:relative;
@@ -38,9 +38,11 @@ input.inputSubmit {display:none;}
 }
 .close_filter img {border: 1px solid #ccc;}
 .word-dialog {border: 1px solid #91BE3F; position: absolute;background-color: whitesmoke; width: 300px;}
-#translationCheckDialog {position: absolute; background-color: #666666; z-index: 2; border: 1px double #fff;
-width: 400px; left: 400px;
+#translationCheckDialog {position: absolute;z-index: 2; border: 1px double #fff;
+width: 600px;
+background-color: whitesmoke;
 }
-#translationCheckHeader {font-size: 2em; color: #ccc;}
-#translationCheckBody {color: white;}
+#translationCheckHeader {font-size: 1.5em; color: #000; border: 1px outset whitesmoke; border-radius: 5px;margin: 2px; padding: 2px;}
+#translationCheckBody {color: #000;}
 .translationMessage {font-size: 10px; clear: both;}
+.addTranslation {border: 1px dotted #444444; padding: 5px;}

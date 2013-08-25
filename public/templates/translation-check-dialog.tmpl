@@ -1,9 +1,15 @@
 <div id="translationCheckDialog">
-    <div id="translationCheckHeader">Переклад слова: <strong><%= word %></strong> - <strong><%= translation %></strong></div>
+    <div id="translationCheckHeader">
+        <strong><%= word %></strong> - <strong><%= translation %></strong>
+    </div>
     <div id="translationCheckBody">
-        <div class="dictionaryType">
-            <div class="dictionaryTitle">My dictionary :</div> <% if(data.my){%><%= data.my.translation %><%} else {%>
-            <div class="noRecords">немає записів</div>
+        <div class="dictionaryType" id="myDictionary">
+            <div class="dictionaryTitle">My dictionary :</div> <% if(data.my){%>
+            <div class="dictionaryBody"><%= data.my.translation %></div>
+            <%} else {%>
+            <div class="dictionaryBody">
+                <div class="noRecords">немає записів</div>
+            </div>
             <% }%>
             <div class='translationMessage'>
                <% if(data.my){ %><%= data.my.isMatched.message %><%}%>
@@ -11,7 +17,9 @@
         </div>
         <div class="dictionaryType">
             <div class="dictionaryTitle">Common dictionary : </div> <%  if(data.common){jQuery.each(data.common, function(i, value){
-                if(value.translation){%><%= value.translation %><% } %>
+                if(value.translation){%>
+                <div class="dictionaryBody"><%= value.translation %></div>
+                <% } %>
                 <% }); %>
                 <% }else {%>
                 <div class="noRecords">немає записів</div>
