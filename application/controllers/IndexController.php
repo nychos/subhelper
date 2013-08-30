@@ -46,10 +46,60 @@ class IndexController extends Zend_Controller_Action
         }
         return false;
     }
+    public function removeTranslationAction()
+    {
+         $this->_helper->layout()->disableLayout();
+         if($this->getRequest()->isXmlHttpRequest()){
+             $id = $this->getRequest()->getParam('id');
+             $id_user = 1;//TODO: Zend_Session implement
+             $translations = new Application_Model_Translations();
+             $result = $translations->deleteTranslationConnection($id, $id_user);
+             if($result){
+                 $this->message("Successfully removed", "id: ".$result);
+             }else {
+                 $this->message("There are no entries to remove", $result, "error");
+             }
+         }
+    }
     /**
-     * Шукає слово та переклад до нього в словнику користувача
+     * Добавлення перекладу в словник
+     */
+    public function addTranslationAction()
+    {
+        
+         $this->_helper->layout()->disableLayout();
+         if($this->getRequest()->isXmlHttpRequest()){
+            $data = array();
+            $translation = trim($this->getRequest()->getParam('translation'));
+            $data['word'] = $this->getRequest()->getParam('word');
+            $id_translation = $this->getRequest()->getParam('id_translation');
+            $referrer = $this->getRequest()->getParam('id_user');
+            $package = array("id" => $id_translation, "id_user" => $referrer);//для переміщення слова у власний словник
+            $data['id_user'] = 1; //TODO : from Session
+            $translations = new Application_Model_Translations();
+            if($id_translation){
+                $data['id_translation'] = $id_translation;
+                //використовуємо переклад
+                if($referrer)$data['referrer'] = $referrer;
+                if($result = $translations->useTranslation($data)){
+                    $this->message("Successfully used translation", $package);
+                }else {
+                    $this->message("Adding translation failed", $result, "error");
+                }
+            }else {
+                (strlen($translation) > 0) ? $data['translation'] = $translation : $this->message("Translation not defined", $translation, "error");
+                //добавлення нового перекладу
+                if($result = $translations->addTranslation($data)){
+                    $this->message("Successfully added new translation", array("id" => $result));
+                }else {
+                    $this->message("Translation adding failed", $result, "error");
+                }
+            }
+         }
+    }
+    /**
+     * Шукає слово та переклад до нього в словнику користувача та загальномус словнику
      * @param String $word
-     * @return Array - масив перекладів | Boolean - false якщо немає слова
      */
     public function findTranslationAction()
     {
@@ -58,7 +108,7 @@ class IndexController extends Zend_Controller_Action
             $translation = trim($this->getRequest()->getParam('translation'));
             $word = $this->getRequest()->getParam('word');
             $id_user = 1; //TODO : from Session
-            $words = new Application_Model_Words();
+            $translations = new Application_Model_Translations();
             $package = array();
             //перевіряє чи переклад співпав з тим що в користувацькій базі
             function isTranslationCorrect($self, $translation, $wordData, $matchedMessage, $notMatchedMessage){
@@ -69,42 +119,33 @@ class IndexController extends Zend_Controller_Action
                      return array('match' => 0, 'message' => $notMatchedMessage);
                  }
             }
+            $result = $translations->findTranslations($word, $id_user);
+            //var_dump($result);die();
             //якщо знайдено у власному словнику
-            if($myTranslation = $words->findMyWord($word, $id_user)){
-                //перевірити на правильність
-                $isMatched = isTranslationCorrect($this, $translation,$myTranslation, "Переклад співпав з вашим власним", "Переклад не співпав, добавте новий або перевірте правильність");
-                $myTranslation['isMatched'] = $isMatched;
-                $package['my'] = $myTranslation;
-            }
-            //робимо пошук в загальному словнику
-            if($usersTranslation = $words->findUsersWord($word, $id_user)){
-                //перевірити на правильність
-                $isMatched = isTranslationCorrect($this, $translation,  $usersTranslation, "Переклад, знайдений в загальному словнику, співпав", "Переклад не співпав з тими що містяться в загальному словнику");
-                $usersTranslation['isMatched'] = $isMatched;
-                $package['common'] = $usersTranslation;
-            }
-            //var_dump($package);die();
+            if($result){
+                if(isset($result['my'])){
+                     $data = $result['my'];
+                    //перевірити на правильність
+                    $isMatched = isTranslationCorrect($this, $translation,$data, "Переклад співпав з вашим власним", "Переклад не співпав, добавте новий або перевірте правильність");
+                    $data['isMatched'] = $isMatched;
+                    $package['my'] = $data;
+                }
+                if(isset($result['common'])){
+                    //робимо пошук в загальному словнику
+                    //перевірити на правильність
+                    $data = $result['common'];
+                    $isMatched = isTranslationCorrect($this, $translation,  $data, "Переклад, знайдений в загальному словнику, співпав", "Переклад не співпав з тими що містяться в загальному словнику");
+                    $data['isMatched'] = $isMatched;
+                    $package['common'] = $data;
+                }
+            }//no results
+            //var_dump($result);die();
             if(count($package)){
                 $this->message("Переклади витягнені з ".count($package). " джерел", $package);
             }else {
                 $this->message("Переклад не знайдено в базі", array("word" => $word, "translation" => $translation));
             }
-         }
-    }
-    public function innerFind($arr, $translation, $compareStr = false)
-    {
-            if(count($arr) > 1){
-                foreach($arr as $value){
-                    //$result[] = $value." === ".$translation. " : ".($value === $translation);
-                    if(trim($value) === $translation)return true;
-                }
-            }else {
-                if(!$compareStr) $compareStr = $arr[0];
-                //$result[] = $compareStr." === ".$translation. " : ".($compareStr === $translation);
-                return trim($compareStr) === $translation;
-            }
-            //return $result;
-            return false;
+         }//end xmlrequest
     }
     /**
      * Перевіряє чи переклад введений користувачем являється правильним
@@ -114,18 +155,7 @@ class IndexController extends Zend_Controller_Action
      */
     public function checkTranslation($arr, $translation)
     {
-        if(isset($arr['translation'])){
-            $translationArr = explode(",", $arr['translation']);
-            $result = $this->innerFind($translationArr, $translation, false);
-            return $result;
-        }else {
-            foreach($arr as $val){
-                $translationStr = $val['translation'];
-                $translationArr = explode(",", $translationStr);
-                $result = $this->innerFind($translationArr, $translation, $translationStr);
-                if($result){return true;}
-            }
-        }
+        foreach($arr as $value) if($translation === $value['translation'])return true;
         return false;
     }
     /**
@@ -198,29 +228,6 @@ class IndexController extends Zend_Controller_Action
         }
         return "Count is : ".count($registry['words']);
     }
-    public function getWordInfoAction()
-    {
-         $this->_helper->layout()->disableLayout();
-         if($this->getRequest()->isXmlHttpRequest()){
-             $word = $this->getRequest()->getParam('word');
-             $id = $this->getRequest()->getParam('id');
-             $sub = new Application_Model_Subtitles();
-             $row = $sub->getSubtitleById($id);
-             //1. витягнули субтитри
-             $subtitle = file_get_contents(PUBLIC_PATH.$row->subtitle);
-             //2. розбили у фрази
-             $phrases = $this->breakIntoPhrases($subtitle);
-             //3. витягнули карту слів
-             $words = $this->breakPhrasesIntoWords($phrases);
-             //витягуємо карту слова
-             $wordArr = $words;//$this->checkWordList($word);
-             if($wordArr){
-                $this->message("Word map is fetched", $wordArr);
-             }else {
-                 $this->message("Word not found in word list", $wordArr, "error");
-             }
-         }
-    }
     /**
      * Витягує субтитр та формує фрази і слова з нього
      * якщо клієнт має локальне сховище, тоді записуємо дані в нього, в інакшому випадку
@@ -267,12 +274,10 @@ class IndexController extends Zend_Controller_Action
          echo json_encode(array("status" => $status, "message" => $message, "data" => $data), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
          die();
     }
-    public function log($message, $data = "no data")
-    {
-        $filename = PUBLIC_PATH."/log.txt";
-        $data = $message." --> ".$data;
-        file_put_contents($filename, $data, FILE_APPEND);
-    }
+//    public function log()
+//    {
+//       //TODO: Zend_Log and Zend_Debug use
+//    }
     public function uploadAction()
     {   
         //показує результат завантаження файлу

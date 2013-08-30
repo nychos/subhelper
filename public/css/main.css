@@ -46,3 +46,6 @@ background-color: whitesmoke;
 #translationCheckBody {color: #000;}
 .translationMessage {font-size: 10px; clear: both;}
 .addTranslation {border: 1px dotted #444444; padding: 5px;}
+.dictionaryBody button { border-radius: 5px; padding: 5px;}
+#myDictionary button:hover {background-color: #f44040; font-weight: bold; color: #fff;}
+#commonDictionary button:hover {background-color: #92c81f; font-weight: bold; color: #fff;}
