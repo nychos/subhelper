@@ -137,6 +137,7 @@
                                                obj.id = $this.data('id');
                                                obj.id_user = $this.data('id-user');
                                                obj.translation = $this.text().trim();
+                                               obj.word = word;
                                                obj.$this = $this;
                                                app.trigger('remove-translation', obj);
                                             });
@@ -227,10 +228,11 @@
                            var obj = $.parseJSON(response);
                            if(obj.status === "success"){
                                 package.id = obj.data.id;// <= 1. obj.data.id 
-                                if(obj.data.is_user)package.id_user = obj.data.id_user;// 2. <= obj.data.id_user;
+                                if(obj.data.id_user)package.id_user = obj.data.id_user;// 2. <= obj.data.id_user;
                                 if(data.translation)package.translation = data.translation; // 3.
                                 package.destination = $('#myDictionary .dictionaryBody');
                                 // передати дані на шаблон перекладу і вставити його до власного словника
+                                console.log(package);
                                 app.trigger('translation-replace', package);
                            }else {
                                  console.log(response);
@@ -244,7 +246,7 @@
                     data.destination = $('#commonDictionary .dictionaryBody');
                     $.ajax({
                        url : 'index/remove-translation',
-                       data : {id : data.id},
+                       data : {id : data.id, word : data.word},
                        type : 'post',
                        success : function(response){
                            //console.log(response);
@@ -258,7 +260,7 @@
                     var obj = {};
                     if(data.id)obj.id = data.id;
                     if(data.id_user)obj.id_user = data.id_user;
-                    else obj.id_user = 1;//default user from session
+                    //else obj.id_user = 1;//default user from session
                     if(data.translation){
                         obj.translation = data.translation;
                     }else {obj.translation = $('#translationCheckHeader').data('translation').trim();}

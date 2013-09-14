@@ -51,9 +51,10 @@ class IndexController extends Zend_Controller_Action
          $this->_helper->layout()->disableLayout();
          if($this->getRequest()->isXmlHttpRequest()){
              $id = $this->getRequest()->getParam('id');
+             $word = $this->getRequest()->getParam('word');
              $id_user = 1;//TODO: Zend_Session implement
              $translations = new Application_Model_Translations();
-             $result = $translations->deleteTranslationConnection($id, $id_user);
+             $result = $translations->deleteTranslationConnection($id,$word, $id_user);
              if($result){
                  $this->message("Successfully removed", "id: ".$result);
              }else {
@@ -74,8 +75,9 @@ class IndexController extends Zend_Controller_Action
             $data['word'] = $this->getRequest()->getParam('word');
             $id_translation = $this->getRequest()->getParam('id_translation');
             $referrer = $this->getRequest()->getParam('id_user');
-            $package = array("id" => $id_translation, "id_user" => $referrer);//для переміщення слова у власний словник
             $data['id_user'] = 1; //TODO : from Session
+            $package = array("id" => $id_translation);//для переміщення слова у власний словник
+            ($referrer) ? $package['id_user'] = $referrer : $package['id_user'] = $data['id_user'];
             $translations = new Application_Model_Translations();
             if($id_translation){
                 $data['id_translation'] = $id_translation;
@@ -90,7 +92,7 @@ class IndexController extends Zend_Controller_Action
                 (strlen($translation) > 0) ? $data['translation'] = $translation : $this->message("Translation not defined", $translation, "error");
                 //добавлення нового перекладу
                 if($result = $translations->addTranslation($data)){
-                    $this->message("Successfully added new translation", array("id" => $result));
+                    $this->message("Successfully added new translation", array("id" => $result, "id_user" => $data['id_user']));
                 }else {
                     $this->message("Translation adding failed", $result, "error");
                 }
