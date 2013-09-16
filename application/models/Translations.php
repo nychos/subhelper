@@ -2,7 +2,7 @@
 
 class Application_Model_Translations extends Zend_Db_Table_Abstract{
     /**
-     * 
+     * //TODO: правильний запит сформувати
      * Шукає слово та переклад до нього у власному словнику
      * @param String $word
      * @param Integer $id_user
@@ -12,17 +12,28 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
     {
         if($word){
             $word = strtolower($word);
-            //id_word => select t.id, t.translation, ut.id_user as user_id, t.id_user from translations as t  left join users_translations as ut on t.id=ut.id_translation where t.id_word = 2;
-            //word => select t.id_word, t.id, t.translation, ut.id_user as user_id, t.id_user from translations as t  left join users_translations as ut on t.id=ut.id_translation cross join words on t.id_word=words.id where t.id_word = words.id AND word = "out";
-            //SELECT t.id, translation, id_word, t.id_user, 'referrer', 'translations' FROM translations as t
-//            INNER JOIN words ON words.id=t.id_word
-//            WHERE word='help'
-//            UNION
-//            SELECT t.id, translation, words.id, t.id_user, ut.referrer, 'users_translations' FROM users_translations as ut
-//            INNER JOIN words ON words.id=ut.id_word
-//            INNER JOIN translations as t ON t.id=ut.id_translation
-//            WHERE word='help'
-            //TODO: правильний запит сформувати
+            /*
+                SELECT DISTINCT `t`.*, `ut`.`id_user` AS `tuser` FROM `translations` AS `t`
+                LEFT JOIN `users_translations` AS `ut` ON t.id=ut.id_translation
+                INNER JOIN `words` ON words.id=ut.id_word OR words.id=t.id_word
+                WHERE (word = 'somebody')
+                ORDER BY `t`.`translation` ASC
+             */
+            
+            /*
+             *  SELECT  `t`.*, `ut`.`id_user` AS `tuser` FROM `translations` AS `t`
+                LEFT JOIN `users_translations` AS `ut` ON t.id=ut.id_translation
+                INNER JOIN `words` ON words.id=ut.id_word OR words.id=t.id_word
+                WHERE (word = 'somebody' AND ((ut.id_user = 1) OR NOT EXISTS (
+                    SELECT b.id_user as tuser FROM translations as t2
+                    LEFT JOIN `users_translations` AS `b` ON t2.id=b.id_translation
+                    INNER JOIN `words` ON words.id=b.id_word OR words.id=t2.id_word
+                    WHERE b.id_user = 1
+                    AND b.id_translation = ut.id_translation
+                )
+                )
+                )
+             */
             $id_user = 1;
             $select = $this->_db->select("t.*")
                 ->distinct()
@@ -30,23 +41,28 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
                 ->joinLeft(array('ut' => "users_translations"),'t.id=ut.id_translation', array("tuser" => "ut.id_user"))
                 ->joinInner("words", 'words.id=ut.id_word OR words.id=t.id_word', array())
                 ->where("word = ?", $word)
-                //->group('tuser')
+                ->where("ut.id_user = ? OR NOT EXISTS (
+                        SELECT b.id_user as tuser FROM translations as t2
+                        LEFT JOIN `users_translations` AS `b` ON t2.id=b.id_translation
+                        INNER JOIN `words` ON words.id=b.id_word OR words.id=t2.id_word
+                        WHERE b.id_user = ?
+                        AND b.id_translation = ut.id_translation
+                        )"
+                , $id_user)
                 ->order('t.translation ASC');
            $str = $select->__toString();
           
            $result = $this->getAdapter()->fetchAll($select);
-           var_dump($str);die();
+           //var_dump($str);die();
           
             //якщо є записи
             if(count($result) > 0){
                 $arr = array();
-                $unique = NULL;
                 //TODO: remove duplicate entries, if id_user = tuser others remove
                 foreach($result as $i => $value){
                     //якщо є використаний переклад тоді беремо його
-                    if(isset($value['tuser'])){
+                    if(isset($value['tuser']) && $value['id_user'] !== $id_user){
                         $user = $value['tuser'];
-                        if($value['tuser'] == $value['id_user'])$unique = $value;
                     }else{//якщо це переклад добавлений
                         $user = $value['id_user'];
                     }
@@ -55,7 +71,7 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
                             $arr[$dictionary][$i]['id_user'] = $user;
                     }else{
                         $dictionary = 'common';
-                        if(isset($value['referrer'])){$arr[$dictionary][$i]['referrer'] = $value['referrer'];}
+                        if($user != NULL)$arr[$dictionary][$i]['referrer'] = $user;//$value['referrer'];}
                         $arr[$dictionary][$i]['id_user'] = $user;
                     }
                         $arr[$dictionary][$i]['id'] = $value['id'];
@@ -64,18 +80,7 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
                         $arr[$dictionary][$i]['added'] = $value['added'];
                 }
                 //var_dump($arr);die();
-                //if tuser = id_user remove another 
-                if($unique){
-                    var_dump($unique);die();
-                    foreach($arr as $j => $dictionary){
-                        foreach($dictionary as $value){
-                            if($unique['id'] == $value['id'] && $unique['tuser'] != $id_user){
-                                unset($arr[$j][$value]);
-                                return $arr[$j][$value];
-                            }
-                        }
-                    }
-                }
+               
                 return $arr;
             }
         }
