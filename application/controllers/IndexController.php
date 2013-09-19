@@ -100,7 +100,7 @@ class IndexController extends Zend_Controller_Action
          }
     }
     /**
-     * Шукає слово та переклад до нього в словнику користувача та загальномус словнику
+     * Шукає слово та переклад до нього в словнику користувача та загальному словнику
      * @param String $word
      */
     public function findTranslationAction()
@@ -245,10 +245,23 @@ class IndexController extends Zend_Controller_Action
              //if session entry exists with such subtitle id fetched that data otherwise fetched from db
              $sub = new Application_Model_Subtitles();   
              $row = $sub->getSubtitleById($id);
+             //var_dump($row);die();
              //1. витягнули субтитри
              $subtitle = file_get_contents(PUBLIC_PATH.$row->subtitle);
-             //2. розбили у фрази
-             $phrases = $this->breakIntoPhrases($subtitle);
+             //2. розбили у фрази та записали їх у базу
+             /*
+              * Перевіряємо чи в базі є фрази з ідентифікатором субтитрів, якщо є витягуємо їх
+              * якщо нема формуємо фрази та записуємо в базу
+              */
+             //$phrase = new Application_Model_Phrases();
+             //$phrases = $phrase->getPhrases($id);
+             //var_dump($phrases);
+//             if($phrases){
+//                 //фрази містяться в базі
+//             }else {
+              $phrases = $this->breakIntoPhrases($subtitle);// розбиваємо на фрази
+                //if(!$phrase->addPhrases($phrases, $id))$this->message("Помилка при добавленні фраз", false, "error");
+             //}
              //3. витягнули карту слів
              $words = $this->breakPhrasesIntoWords($phrases);
              $newPhrases = $this->wrapWordsInPhrases($phrases);

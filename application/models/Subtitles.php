@@ -1,7 +1,7 @@
 <?php
 
 class Application_Model_Subtitles extends Zend_Db_Table_Abstract{
-    protected $_name = "Subtitles";
+    protected $_name = "subtitles";
     
     public function addSubtitle($data)
     {

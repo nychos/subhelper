@@ -2,7 +2,7 @@
 
 class Application_Model_Translations extends Zend_Db_Table_Abstract{
     /**
-     * //TODO: правильний запит сформувати
+     * 
      * Шукає слово та переклад до нього у власному словнику
      * @param String $word
      * @param Integer $id_user
@@ -58,7 +58,6 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
             //якщо є записи
             if(count($result) > 0){
                 $arr = array();
-                //TODO: remove duplicate entries, if id_user = tuser others remove
                 foreach($result as $i => $value){
                     //якщо є використаний переклад тоді беремо його
                     if(isset($value['tuser']) && $value['id_user'] !== $id_user){
@@ -71,7 +70,7 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
                             $arr[$dictionary][$i]['id_user'] = $user;
                     }else{
                         $dictionary = 'common';
-                        if($user != NULL)$arr[$dictionary][$i]['referrer'] = $user;//$value['referrer'];}
+                        if($user != NULL)$arr[$dictionary][$i]['referrer'] = $user;
                         $arr[$dictionary][$i]['id_user'] = $user;
                     }
                         $arr[$dictionary][$i]['id'] = $value['id'];
