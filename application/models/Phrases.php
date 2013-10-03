@@ -21,14 +21,22 @@ class Application_Model_Phrases extends Zend_Db_Table_Abstract{
      */
     public function addPhrases($phrases, $id_sub)
     {
-        if($phrases && $id_sub){
-            foreach($phrases as $phrase){
-                $row = $this->createRow();
-                $row->phrase = $phrase;
-                $row->id_subtitle = $id_sub;
-                if(!$row->save())return false;
-            }
-        }else return false;
+        $db = $this->getAdapter();
+        $db->beginTransaction();//розпочинаємо транзакцію
+        try{
+            $query = 'INSERT INTO ' . $db->quoteIdentifier($this->_name) . ' (`phrase`, `id_subtitle`) VALUES ';
+            $queryVals = array();
+            foreach ($phrases as $phrase) $queryVals[] = '(' . $db->quote(trim($phrase)) . ', ' . $db->quote(trim($id_sub)) . ')';
+            $str = $query . implode(',', $queryVals);
+            $result = $db->query($str);
+            
+            $db->commit();//підтверджуємо транзакцію
+            return $result;
+            
+        }catch(Exception $e){
+            $db->rollBack();//в разі неуспішної вставки робимо відкочування
+            echo $e->getMessage();//TODO: опрацювати помилку
+        }
     }
 }
 

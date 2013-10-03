@@ -4,6 +4,8 @@ class IndexController extends Zend_Controller_Action
 {   
     protected $_words = array();//масив усіх слів субтитра
     protected $_wordPattern =  "~[a-zA-Z]+(['-][a-zA-Z]+)*~i";
+    protected $time = array();
+    protected $wordMap = array();
     
     public function preDispatch() 
     {
@@ -38,6 +40,11 @@ class IndexController extends Zend_Controller_Action
         $contex = preg_replace($patterns, "", $subtitle);
         preg_match_all($sentence, $contex, $out);
         return $out[0];
+    }
+    public function getmicrotime()
+    {
+        list($usec, $sec) = explode(" ",microtime());
+        return ((float)$usec + (float)$sec);
     }
     public function getWords()
     {
@@ -167,15 +174,23 @@ class IndexController extends Zend_Controller_Action
      */
     public function breakPhrasesIntoWords($phrases)
     {
-        $testArr = array();
+        $newPhrases = array();
         foreach($phrases as $index => $phrase){
+            if(isset($phrase['phrase']))$phrase = $phrase['phrase'];
+            $newPhrases[$index]['phrase'] = $this->wrapWordsInPhrase($phrase);//обгортає слова в фразі
             preg_match_all($this->_wordPattern, $phrase, $words, PREG_OFFSET_CAPTURE);//пошук підстроки
+
+            //проходиться по всім словам у фразі
             foreach($words[0] as $word){
                  $word = $word[0];
-                 if(!is_numeric($word))$testArr[] = $this->checkWordList($word, $index);
+                 if(!is_numeric($word)){
+                     //$this->checkWordList($word, $index);
+                     $wordIndex = $this->addPhraseIndexToWord($word, $index);
+                     $newPhrases[$index]['words'][] = $wordIndex;
+                 }
             }
         }
-        return $this->getWords();
+        return array('words' => $this->wordMap, 'phrases' => $newPhrases);
     }
     /**
      * Обгортає слова у фразах тегами, щоб можна потім було їх ідентифікувати
@@ -184,14 +199,48 @@ class IndexController extends Zend_Controller_Action
      * @param type $phrases
      * @return Array - масив з фразами, слова в яких обгорнуті тегами
      */
-    public function wrapWordsInPhrases($phrases)
+    public function wrapWordsInPhrase($phrase)
     {
-        $newPhrasesWithWrappedWords = [];
-        foreach($phrases as $i => $phrase){
-            $replacement = "<span>$0</span>";
-            $newPhrasesWithWrappedWords[] = preg_replace($this->_wordPattern, $replacement, $phrase);
+       $replacement = "<span>$0</span>";
+       return preg_replace($this->_wordPattern, $replacement, trim($phrase));
+    }
+    /**
+     * Формування wordMap
+     * @param String $word
+     * @param Int $phraseIndex
+     * @return Array $letter => $index
+     */
+    public function addPhraseIndexToWord($word, $phraseIndex)
+    {
+        //1.перевіряємо отримані параметри
+        if(!strlen($word) > 0 || !is_numeric($phraseIndex)) return false;
+        //2. пошук слова у wordMap
+        $word = strtolower($word);
+        $firstLetter = $word[0];
+        $wordIsInDictionary = false;
+        if(count($this->wordMap)){
+            foreach($this->wordMap as $i => $letter){
+                 if($firstLetter === $i){
+                    foreach($letter as $j => $wordArr){
+                        //знаходимо потрібне слово
+                        if($wordArr['word'] === $word){
+                            //добавляємо індекс фрази і виходимо
+                            $wordIsInDictionary = true;//виставляємо прапорець, що слово є у словнику
+                            //записуємо індекс фрази до вказаного слова
+                            array_push($this->wordMap[$firstLetter][$j]['source'], $phraseIndex);
+                            return array('letter' => $i, 'index' => $j);// example 'p' => 3
+                        }
+                    }
+                 }
+            }
         }
-        return $newPhrasesWithWrappedWords;
+         //записуємо слово у wordMap
+        if(!$wordIsInDictionary){
+            $this->wordMap[$firstLetter][] = array('word' => $word, 'source' => array($phraseIndex));
+            end($this->wordMap[$firstLetter]);
+            $last_key = key($this->wordMap[$firstLetter]);
+            return array('letter' => $firstLetter, 'index' => $last_key);
+        }
     }
     /**
      * Шукає слово у словнику, якщо знаходить, дописує номер строки
@@ -199,37 +248,37 @@ class IndexController extends Zend_Controller_Action
      * @param Integer $index - номер строки, де дане слово міститься
      * @return boolean | Array
      */
-    public function checkWordList($word, $index = false)
-    {
-        if(!(is_string($word) && strlen($word) > 0))return false;
-        $hasIndex = is_numeric($index);
-        $wordIsInDictionary = false;
-        $word = strtolower($word);
-        $registry = Zend_Registry::getInstance();
-        
-        if(Zend_Registry::isRegistered('words')){
-            
-            $words = $registry['words'];
-            if(count($words)){
-                foreach($words as $i => $wordData){
-
-                    if(strtolower($wordData['word']) === $word){
-                       $wordIsInDictionary = true;
-                       if($hasIndex){
-                           array_push($registry['words'][$i]['source'], $index);
-                       }else {
-                           return $wordData;
-                       }
-                    }
-                }
-            }
-        }
-        //добавляємо слово в словник, якщо йому нема еквівалентів
-        if($hasIndex === true && $wordIsInDictionary === false){
-            $registry['words'][] = array('word' => $word, 'source' => array($index));
-        }
-        return "Count is : ".count($registry['words']);
-    }
+//    public function checkWordList($word, $index = false)
+//    {
+//        if(!(is_string($word) && strlen($word) > 0))return false;
+//        $hasIndex = is_numeric($index);
+//        $wordIsInDictionary = false;
+//        $word = strtolower($word);
+//        $registry = Zend_Registry::getInstance();
+//        
+//        if(Zend_Registry::isRegistered('words')){
+//            
+//            $words = $registry['words'];
+//            if(count($words)){
+//                foreach($words as $i => $wordData){
+//
+//                    if(strtolower($wordData['word']) === $word){
+//                       $wordIsInDictionary = true;
+//                       if($hasIndex){
+//                           array_push($registry['words'][$i]['source'], $index);
+//                       }else {
+//                           return $wordData;
+//                       }
+//                    }
+//                }
+//            }
+//        }
+//        //добавляємо слово в словник, якщо йому нема еквівалентів
+//        if($hasIndex === true && $wordIsInDictionary === false){
+//            $registry['words'][] = array('word' => $word, 'source' => array($index));
+//        }
+//        return "Count is : ".count($registry['words']);
+//    }
     /**
      * Витягує субтитр та формує фрази і слова з нього
      * якщо клієнт має локальне сховище, тоді записуємо дані в нього, в інакшому випадку
@@ -243,38 +292,65 @@ class IndexController extends Zend_Controller_Action
          if($this->getRequest()->isXmlHttpRequest()){
              $id = $this->getRequest()->getParam('id');
              //if session entry exists with such subtitle id fetched that data otherwise fetched from db
-             $sub = new Application_Model_Subtitles();   
+             $sub = new Application_Model_Subtitles();
+             $start = $this->getmicrotime();
              $row = $sub->getSubtitleById($id);
+             $end = $this->getmicrotime();
+             $this->time['db']['getSubtitleById']['duration'] = round(($end - $start) * 1000, 3);
              //var_dump($row);die();
              //1. витягнули субтитри
+             $start = $this->getmicrotime();
              $subtitle = file_get_contents(PUBLIC_PATH.$row->subtitle);
+             $end = $this->getmicrotime();
+             $this->time['file']['subtitle']['duration'] = round(($end - $start) * 1000, 3);
              //2. розбили у фрази та записали їх у базу
              /*
               * Перевіряємо чи в базі є фрази з ідентифікатором субтитрів, якщо є витягуємо їх
               * якщо нема формуємо фрази та записуємо в базу
               */
-             //$phrase = new Application_Model_Phrases();
-             //$phrases = $phrase->getPhrases($id);
-             //var_dump($phrases);
-//             if($phrases){
-//                 //фрази містяться в базі
-//             }else {
-              $phrases = $this->breakIntoPhrases($subtitle);// розбиваємо на фрази
-                //if(!$phrase->addPhrases($phrases, $id))$this->message("Помилка при добавленні фраз", false, "error");
-             //}
-             //3. витягнули карту слів
-             $words = $this->breakPhrasesIntoWords($phrases);
-             $newPhrases = $this->wrapWordsInPhrases($phrases);
+             $phrase = new Application_Model_Phrases();
+             $start = $this->getmicrotime();
+             $phrases = $phrase->getPhrases($id);
+             $end = $this->getmicrotime();
+             $this->time['db']['getPhrases']['duration'] = round(($end - $start) * 1000, 3);
+             
+             if(!$phrases){
+                $start = $this->getmicrotime();
+                $phrases = $this->breakIntoPhrases($subtitle);// розбиваємо на фрази
+                $end = $this->getmicrotime();
+                $this->time['method']['breakIntoPhrases']['duration'] = round(($end - $start) * 1000, 3);
+                
+                $start = $this->getmicrotime();
+                $addPhrases = $phrase->addPhrases($phrases, $id);
+                $end = $this->getmicrotime();
+                $this->time['db']['addPhrases']['duration'] = round(($end - $start) * 1000, 3);
+                
+                if(!$addPhrases)$this->message("Помилка при добавленні фраз", false, "error");
+             }
+             //3. витягнули карту слів разом з фразами, в яких слова обгорнуті тегами
+             $start = $this->getmicrotime();
+             $arr = $this->breakPhrasesIntoWords($phrases);
+             $end = $this->getmicrotime();
+             $this->time['method']['breakPhrasesIntoWords']['duration'] = round(($end - $start) * 1000, 3);
+             //var_dump($arr);die();
+             
+             $words = $arr['words'];
+             $phrases = $arr['phrases'];
+             
+             $start = $this->getmicrotime();
              $title = str_replace("/uploads/", "", $row->subtitle);
+             $end = $this->getmicrotime();
+             $this->time['php']['str_replace']['duration'] =round(($end - $start) * 1000, 3);
              //ці дані потрібно записати в сесію
              $data = array(
                  'id' => $row->id,
                  'title' => $title,
                  'created' => $row->created,
                  'id_user' => $row->id_user,
-                 'subtitle' => $subtitle,
-                 'phrases' => $newPhrases,
+                 //'subtitle' => $subtitle,
+                 'phrases' => $phrases,
                  'wordMap' => $words,
+                 'timeProcess' => $this->time
              );
              if(count($row)){
                  $this->message("Subtitle successfully fetched", $data);
@@ -289,10 +365,6 @@ class IndexController extends Zend_Controller_Action
          echo json_encode(array("status" => $status, "message" => $message, "data" => $data), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
          die();
     }
-//    public function log()
-//    {
-//       //TODO: Zend_Log and Zend_Debug use
-//    }
     public function uploadAction()
     {   
         //показує результат завантаження файлу

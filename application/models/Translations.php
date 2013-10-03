@@ -85,6 +85,24 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
         }
         return false;
     }
+    public function findUserTranslation($word)
+    {
+        if($word){
+            $id_user = 1;//TODO: fetch user id from SESSION
+            $select = $this->_db->select("*")
+                        ->from(array("t" => "translations"))
+                        ->distinct()
+                        ->joinLeft(array("ut" => "users_translations"), "t.id=ut.id_translation")
+                        ->joinInner("words", "t.id_word=words.id")
+                        ->where("word = ? AND t.id_user = ?", $word, $id_user);
+            
+            $rows = $db->fetchAll($select);
+            if(count($rows) !== 0) return $rows;
+            //$str = $select->__toString();
+            //var_dump($str);die();
+        }
+        return NULL;
+    }
     public function getWordId($word)
     {
         $select = $this->_db->select()->from('words')->where('word = ?', $word);

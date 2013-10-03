@@ -11,8 +11,12 @@ body {margin: 0px; padding: 0px;}
 #wrapper > * {position: inherit; border : 1px solid whitesmoke;}
 iframe {display: none;}
 #header {height: 50px;}
-#aside {max-height: 400px; overflow: scroll; width: inherit;}
-#aside > div {width: inherit; position: relative; float: left;}
+#aside {line-height: 2em; background-color: #68889E; height: 2em;}
+#content {height: 400px;overflow: scroll; width: inherit;}
+/*#content > div {width: inherit; position: relative; float: left;}*/
+#result {position: relative;}
+#shadow {position: absolute;top: 0;border-radius: 10px;z-index: 1000; background-color: whitesmoke; width: 50%; height: 50%; opacity: 0.7;display: none;}
+#shadow > * {text-align: center;}
 #logo {position: relative; float: left;}
 /*** styling the input type=file ***/
 .fileWrapper {float:left; width:104px; height:24px;position:relative;

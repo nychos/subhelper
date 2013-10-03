@@ -2,7 +2,6 @@
         $('document').ready(function(){
             app = $.sammy('#content', function() {
             storage = new Storage();
-            var phrasesContainer = $('#aside #result');
             function unescape(str) { return String(str).replace(/&lt;/g, "<").replace(/&gt;/g, ">");}
             function Translate(){};
             Translate.prototype.removeObject = function($this, time){
@@ -16,8 +15,21 @@
                 this.get('#/', function(context) {
                     this.swap('');
                     context.render('templates/main.tmpl').appendTo(context.$element()).then(function(){
-                                   //відображаємо фрази
-                                   this.trigger('show-phrases', {id : 1});
+                        $('#shadow').appendTo('#content');//TODO: перенести в Main.tmpl
+                        app.phrasesContainer = $('#result');
+                        //відображаємо фрази
+                        this.trigger('show-phrases', {id : 3});
+                    });
+                    
+                    $(document)
+                    .ajaxStart(function(){
+                       //show preloading
+                       $('#shadow').show().center('parent');
+                        $('#shadow img').center('parent');
+                    })
+                    .ajaxStop(function(){
+                        //hide preloading
+                       $('#shadow').hide();
                     });
                 });
                  /**
@@ -26,14 +38,17 @@
                this.bind('show-filter', function(e,data){
                    $('.filter').remove();
                    $('.word-dialog').remove();
+                   var container = $('#aside');//TODO: винести звідси
                    //передаємо назву фільтра та функцію, що робити по закриті фільтра
-                   this.render('templates/filter.tmpl', {data : data}).appendTo(this.$element()).then(function(content){
+                   this.render('templates/filter.tmpl', {data : data}).appendTo(container).then(function(content){
                        //console.log(content);
                        //кнопка закриття фільтра
                        $('.close_filter').bind('click', function(){
+                           console.time("closeFilter");
                            $('.word-dialog').remove();
                            $('.phrase').show().children().removeClass('activeWord');
                            $(this).parent().remove();//видаляємо фільтр
+                           console.timeEnd("closeFilter");
                        });
                    });
                });
@@ -42,7 +57,6 @@
                 */
                this.bind('show-word-dialog', function(e, data){
                    $('.word-dialog').remove();
-                   //$('#translationCheckDialog').remove();
                    var $this = this;
                    this.render('templates/word-dialog.tmpl', {data : data}).prependTo($('#result')).then(function(content){
                        var wordDialog = $('.word-dialog');
@@ -154,7 +168,9 @@
                        //показати всі фрази зі словом
                        $('#showWordPhrases').bind('click', function(){
                           app.trigger('show-filter', data);
+                          console.time("showSimilarPhrases");
                           app.sub.showSimilarPhrases(data.filterName, $('.phrase'));
+                          console.timeEnd("showSimilarPhrases");
                         });
                    });
                });
@@ -165,12 +181,11 @@
                 this.bind('show-phrases', function(e, data){
                  //перевіряємо локальне сховище 
                  var phraseObj = storage.checkItem("subtitles", data.id);
-
                  if(phraseObj){
                       app.sub = new Subtitle(phraseObj);
                         //витягуємо дані та вставляємо в DOM
                         this.render('templates/phrases.tmpl', {data : phraseObj}).then(function(content){
-                            phrasesContainer.html(unescape(content));
+                            app.phrasesContainer.html(unescape(content));
                         });
                     }else {
                         //запит до сервера відбуватиметься тільки, якщо даних в локальному сховищі немає
@@ -201,6 +216,7 @@
                          var word = $this.text().toLowerCase();
                          //посилання на фрази, самі фрази та їх кількість
                          var obj = app.sub.fetchWordPhrases(word);
+                         //console.log(obj);
                          //відображення діалогового вікна для слова
                          app.trigger('show-word-dialog', {filterName : word, count : obj.count, coords : $this.position()});
                      }); 

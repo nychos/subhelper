@@ -13,9 +13,17 @@ function Subtitle(data){
  * @returns {undefined}
  */
 Subtitle.prototype.findPhrasesReferences = function(word){
+    //console.log(this.phraseMap);
+    var firstLetter = word.charAt(0).toLowerCase();
     for(var i in this.phraseMap){
-        if(this.phraseMap[i].word.toLowerCase() === word){
-            return this.phraseMap[i].source;
+        if(i === firstLetter){
+            var phrase = this.phraseMap[i];
+            for(var j in phrase){
+                //console.log(phrase[j]);
+                if(phrase[j].word.toLowerCase() === word){
+                    return phrase[j].source;
+                }
+            }
         }
     }
     throw new Error("Word " + word + " not found");
@@ -55,7 +63,7 @@ Subtitle.prototype.showSimilarPhrases = function(word, phraseDiv){
                         if(text === word){
                             $(this).addClass('activeWord');
                         }
-                    })
+                    });
                 }
             });
         }
