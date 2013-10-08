@@ -1,5 +1,5 @@
 <div class="subtitle" data-subtitle-id="<%= data.id %>">
-<% $.each(data.phrases, function(index, value){ %>
-<p class="phrase"><%= $.trim(value.phrase) %></p>
+<% $.each(data, function(index, value){ %>
+<p class="phrase" data-phrase-id="<%= index %>"><%= $.trim(value.phrase) %></p>
 <% }); %>
 </div>

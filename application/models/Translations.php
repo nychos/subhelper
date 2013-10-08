@@ -85,6 +85,27 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
         }
         return false;
     }
+    /**
+     * Витягує всі переклади користувача
+     * @return boolean
+     */
+    public function getUserTranslations()
+    {
+        $id_user = 1;//TODO: from SESSION
+        $db = $this->getAdapter();
+        $select = $this->_db->select("*")
+                ->from(array("t" => "translations"), array("translation"))
+                ->distinct()
+                ->joinLeft(array("ut" => "users_translations"), "t.id=ut.id_translation", array())
+                ->joinInner("words", "t.id_word=words.id", array("word"))
+                ->where("t.id_user = ?", $id_user);
+        
+        $result = $db->fetchAll($select);
+        $str = $select->__toString();
+        //var_dump($result);die();
+        if(count($result))return $result;
+        return false;
+    }
     public function findUserTranslation($word)
     {
         if($word){
@@ -98,10 +119,8 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
             
             $rows = $db->fetchAll($select);
             if(count($rows) !== 0) return $rows;
-            //$str = $select->__toString();
-            //var_dump($str);die();
         }
-        return NULL;
+            return NULL;
     }
     public function getWordId($word)
     {

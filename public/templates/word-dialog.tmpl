@@ -2,8 +2,8 @@
     <button id='showWordPhrases'>Show all <%= data.count %> phrases</button>
     <form action="#">
         <input type="text"  required pattern='[а-яіїА-ЯіЇ]+(-[а-яіїА-ЯіЇ]+)*' name="translation" />
-        <input type="hidden" name="word" value="<%= data.filterName %>"/>
+        <input type="hidden" name="word" value="<%= data.word %>"/>
         <input type="submit" value="Check" />
-        <button>I don't know</button>
+        <button id="showTranslation">?</button>
     </form>
 </div>

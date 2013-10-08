@@ -46,13 +46,13 @@ class IndexController extends Zend_Controller_Action
         list($usec, $sec) = explode(" ",microtime());
         return ((float)$usec + (float)$sec);
     }
-    public function getWords()
-    {
-        if(Zend_Registry::isRegistered('words')){
-            return Zend_Registry::get('words');
-        }
-        return false;
-    }
+//    public function getWords()
+//    {
+//        if(Zend_Registry::isRegistered('words')){
+//            return Zend_Registry::get('words');
+//        }
+//        return false;
+//    }
     public function removeTranslationAction()
     {
          $this->_helper->layout()->disableLayout();
@@ -236,7 +236,9 @@ class IndexController extends Zend_Controller_Action
         }
          //записуємо слово у wordMap
         if(!$wordIsInDictionary){
-            $this->wordMap[$firstLetter][] = array('word' => $word, 'source' => array($phraseIndex));
+            //добавляємо 3 поле translation яке вказуватиме що переклад є у користувача для даного слова
+            $hasTranslation = $this->findTranslationForWordInDictionary($word);
+            $this->wordMap[$firstLetter][] = array('word' => $word, 'source' => array($phraseIndex), 'hasTranslation' => $hasTranslation);
             end($this->wordMap[$firstLetter]);
             $last_key = key($this->wordMap[$firstLetter]);
             return array('letter' => $firstLetter, 'index' => $last_key);
@@ -327,13 +329,23 @@ class IndexController extends Zend_Controller_Action
                 
                 if(!$addPhrases)$this->message("Помилка при добавленні фраз", false, "error");
              }
-             //3. витягнули карту слів разом з фразами, в яких слова обгорнуті тегами
+             
+             //3. витягнули користувацький словник
+             $translations = new Application_Model_Translations();
+             $userTranslations = $translations->getUserTranslations();
+             $start = $this->getmicrotime();
+             $dictionary = $this->orderUserTranslations($userTranslations);
+             $end = $this->getmicrotime();
+             $this->time['method']['orderUserTranslations']['duration'] =round(($end - $start) * 1000, 3);
+             
+             //4. витягнули карту слів разом з фразами, в яких слова обгорнуті тегами
              $start = $this->getmicrotime();
              $arr = $this->breakPhrasesIntoWords($phrases);
              $end = $this->getmicrotime();
              $this->time['method']['breakPhrasesIntoWords']['duration'] = round(($end - $start) * 1000, 3);
              //var_dump($arr);die();
-             
+
+             //var_dump($dictionary);die();
              $words = $arr['words'];
              $phrases = $arr['phrases'];
              
@@ -350,6 +362,7 @@ class IndexController extends Zend_Controller_Action
                  //'subtitle' => $subtitle,
                  'phrases' => $phrases,
                  'wordMap' => $words,
+                 'dictionary' => $dictionary,
                  'timeProcess' => $this->time
              );
              if(count($row)){
@@ -358,6 +371,48 @@ class IndexController extends Zend_Controller_Action
                  $this->message("Couldn't fetch subtitle. Maybe there are no subtitles with such id", $row, "error");
              }
          }
+    }
+    /**
+     * Формуванння словника користувача добавлення індексів слів відповідних слів у wordMap
+     * @param array $translations
+     * @return Array
+     */
+    public function orderUserTranslations(Array $translations)
+    {
+        if(count($translations)){
+            $newArr = array();
+            foreach($translations as $i => $value){
+                $word = $value['word'];
+                $firstLetter = $this->getFirstLowerLetter($word);
+                //здійснити пошук слова у wordMap і добавити звязок
+                $translation = iconv('cp1251', 'utf8', $value['translation']);
+                
+                if(isset($newArr[$firstLetter][$word]))
+                    array_push($newArr[$firstLetter][$word],$translation);
+                else 
+                    $newArr[$firstLetter][$word] = array($translation);
+            }
+            $this->dictionary = $newArr;
+            return $newArr;
+        }
+    }
+    /**
+     * Вказує чи слово у wordMap уже перекладено користувачем чи ні
+     * @param type $word
+     * @returns boolean
+     */
+    public function findTranslationForWordInDictionary($word)
+    {
+        $firstLetter = $this->getFirstLowerLetter($word);
+        if(isset($this->dictionary[$firstLetter][$word]))
+            return true;
+        else 
+            return false;
+    }
+    public function getFirstLowerLetter($word)
+    {
+        if(strlen($word) > 0)return strtolower($word[0]);
+        return false;
     }
     
     public function message($message, $data, $status = "success")

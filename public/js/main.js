@@ -43,10 +43,12 @@
                    this.render('templates/filter.tmpl', {data : data}).appendTo(container).then(function(content){
                        //console.log(content);
                        //кнопка закриття фільтра
-                       $('.close_filter').bind('click', function(){
+                       $('.close_filter').off('click').on('click', function(){
                            console.time("closeFilter");
                            $('.word-dialog').remove();
-                           $('.phrase').show().children().removeClass('activeWord');
+                           //console.time("showAllPhrases");
+                           app.sub.showAllPhrases();
+                           //console.timeEnd("showAllPhrases");
                            $(this).parent().remove();//видаляємо фільтр
                            console.timeEnd("closeFilter");
                        });
@@ -169,9 +171,27 @@
                        $('#showWordPhrases').bind('click', function(){
                           app.trigger('show-filter', data);
                           console.time("showSimilarPhrases");
-                          app.sub.showSimilarPhrases(data.filterName, $('.phrase'));
+                          app.sub.showSimilarPhrases(data);
                           console.timeEnd("showSimilarPhrases");
                         });
+                        
+                        $('#showTranslation')
+                           .bind('mouseenter', function(e){
+                                e.preventDefault();
+                                //пошук перекладу для даного слова
+                                var word = data.word.toLowerCase();
+                                var dictionary = storage.get('dictionary')[0];
+                                var translation = app.sub.getTranslationFromDictionary(word, dictionary);
+                                if(!translation){
+                                    var info = "No translation";
+                                }else {
+                                    var info = translation.join(", ");
+                                }
+                                $(this).text(info);
+                           })
+                           .bind('mouseleave', function(e){
+                                $(this).text("?");
+                           });
                    });
                });
                 /**
@@ -180,13 +200,23 @@
                  */
                 this.bind('show-phrases', function(e, data){
                  //перевіряємо локальне сховище 
-                 var phraseObj = storage.checkItem("subtitles", data.id);
-                 if(phraseObj){
-                      app.sub = new Subtitle(phraseObj);
+                 var subObj = storage.checkItem("subtitles", data.id);
+                 if(subObj){
+                     //Отримали всю інформацію про субтитри: phrases, wordMap
+                      app.sub = new Subtitle(subObj);
+                      //console.log(app.sub.data.phrases);
                         //витягуємо дані та вставляємо в DOM
-                        this.render('templates/phrases.tmpl', {data : phraseObj}).then(function(content){
+                        this.render('templates/phrases.tmpl', {data : app.sub.data.phrases}).then(function(content){
                             app.phrasesContainer.html(unescape(content));
+                            app.sub.setPhrases($('.phrase'));//кешуємо фрази
+                            //наведення на фразу
+                            $('.phrase').off('mouseenter').on('mouseenter', function(){
+                                var id = $(this).data('phrase-id');
+                                var count = app.sub.getPhrase(id).getCountOfWords();
+                                //console.log(count);
+                            });
                         });
+                        
                     }else {
                         //запит до сервера відбуватиметься тільки, якщо даних в локальному сховищі немає
                         $.ajax({
@@ -199,7 +229,10 @@
                                var obj = $.parseJSON(response);
                                if(obj.status === "success"){
                                    //додати субтитр якщо ідентифікатор субтитра унікальний
+                                   var dictionary = obj.data.dictionary;
+                                   delete obj.data.dictionary;
                                    storage.add("subtitles",obj.data);
+                                   storage.add("dictionary",dictionary);
                                    //рекурсивно викликаємо функцію
                                    app.trigger('show-phrases', {id : data.id});
                                }
@@ -212,13 +245,17 @@
                 this.bind('phrases-loaded', function(){
                     //при нажаті на слово
                     $('#result').on('click','.phrase span', function(){
-                        var $this = $(this);
+                         var $this = $(this);
+                         //слово знайти у wordMap
                          var word = $this.text().toLowerCase();
+                         //console.log($this);
                          //посилання на фрази, самі фрази та їх кількість
-                         var obj = app.sub.fetchWordPhrases(word);
-                         //console.log(obj);
+                         var wordObj = app.sub.getWord(word);
+                         var countPhrases = wordObj.getCountOfPhrases();
+                         var source = wordObj.getPhrasesIndexes();
+                         //console.log(wordObj);
                          //відображення діалогового вікна для слова
-                         app.trigger('show-word-dialog', {filterName : word, count : obj.count, coords : $this.position()});
+                         app.trigger('show-word-dialog', {word : word, source : source, count : countPhrases, coords : $this.position()});
                      }); 
                 });
                 /*добавлення перекладу*/
