@@ -53,3 +53,14 @@ background-color: whitesmoke;
 .dictionaryBody button { border-radius: 5px; padding: 5px;}
 #myDictionary button:hover {background-color: #f44040; font-weight: bold; color: #fff;}
 #commonDictionary button:hover {background-color: #92c81f; font-weight: bold; color: #fff;}
+.phrase span {
+    background-color: whitesmoke;
+    border: 1px outset #CCCCCC;
+    border-radius: 5px 5px 5px 5px;
+    font-size: 14px;
+    line-height: 3em;
+    padding: 8px;
+}
+.phrase span:hover {cursor: pointer;}
+.translated {background-color: #fff !important; border: 1px inset #CCCCCC !important;}
+.waiting {background-color: #d2b45b !important;}

@@ -1,11 +1,4 @@
-function Word(obj){
-    //TODO: цього не потрібно
-    if(typeof obj === 'object'){
-        this.word = obj.word;
-        this.source = obj.source;
-        this.hasTranslation = obj.hasTranslation;
-    }
-};
+function Word(){};
 /**
  * Кіл-ть фраз, де слово зустрілось
  * @returns Int
@@ -22,6 +15,13 @@ Word.prototype.getPhrasesIndexes = function(){
  */
 Word.prototype.getTranslationAvailability = function(){
   return this.hasTranslation;  
+};
+/**
+ * Встановлює наявність перекладу у слова
+ * @param {boolean} status
+ */
+Word.prototype.setTranslationStatus = function(status){
+  this.hasTranslation = status;
 };
 
 

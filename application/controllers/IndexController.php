@@ -46,13 +46,6 @@ class IndexController extends Zend_Controller_Action
         list($usec, $sec) = explode(" ",microtime());
         return ((float)$usec + (float)$sec);
     }
-//    public function getWords()
-//    {
-//        if(Zend_Registry::isRegistered('words')){
-//            return Zend_Registry::get('words');
-//        }
-//        return false;
-//    }
     public function removeTranslationAction()
     {
          $this->_helper->layout()->disableLayout();
@@ -244,43 +237,6 @@ class IndexController extends Zend_Controller_Action
             return array('letter' => $firstLetter, 'index' => $last_key);
         }
     }
-    /**
-     * Шукає слово у словнику, якщо знаходить, дописує номер строки
-     * @param String $word - слово
-     * @param Integer $index - номер строки, де дане слово міститься
-     * @return boolean | Array
-     */
-//    public function checkWordList($word, $index = false)
-//    {
-//        if(!(is_string($word) && strlen($word) > 0))return false;
-//        $hasIndex = is_numeric($index);
-//        $wordIsInDictionary = false;
-//        $word = strtolower($word);
-//        $registry = Zend_Registry::getInstance();
-//        
-//        if(Zend_Registry::isRegistered('words')){
-//            
-//            $words = $registry['words'];
-//            if(count($words)){
-//                foreach($words as $i => $wordData){
-//
-//                    if(strtolower($wordData['word']) === $word){
-//                       $wordIsInDictionary = true;
-//                       if($hasIndex){
-//                           array_push($registry['words'][$i]['source'], $index);
-//                       }else {
-//                           return $wordData;
-//                       }
-//                    }
-//                }
-//            }
-//        }
-//        //добавляємо слово в словник, якщо йому нема еквівалентів
-//        if($hasIndex === true && $wordIsInDictionary === false){
-//            $registry['words'][] = array('word' => $word, 'source' => array($index));
-//        }
-//        return "Count is : ".count($registry['words']);
-//    }
     /**
      * Витягує субтитр та формує фрази і слова з нього
      * якщо клієнт має локальне сховище, тоді записуємо дані в нього, в інакшому випадку

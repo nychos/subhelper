@@ -93,16 +93,23 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
     {
         $id_user = 1;//TODO: from SESSION
         $db = $this->getAdapter();
-        $select = $this->_db->select("*")
-                ->from(array("t" => "translations"), array("translation"))
+         $select = $this->_db->select()
                 ->distinct()
-                ->joinLeft(array("ut" => "users_translations"), "t.id=ut.id_translation", array())
-                ->joinInner("words", "t.id_word=words.id", array("word"))
-                ->where("t.id_user = ?", $id_user);
+                ->from(array("t" => "translations"), array("t.translation"))
+                ->joinLeft(array('ut' => "users_translations"),'t.id=ut.id_translation', array())
+                ->joinInner("words", 'words.id=ut.id_word OR words.id=t.id_word', array("word"))
+                ->where("ut.id_user = ? OR NOT EXISTS (
+                        SELECT b.id_user as tuser FROM translations as t2
+                        LEFT JOIN `users_translations` AS `b` ON t2.id=b.id_translation
+                        INNER JOIN `words` ON words.id=b.id_word OR words.id=t2.id_word
+                        WHERE b.id_user = ?
+                        AND b.id_translation = ut.id_translation
+                        )"
+                , $id_user)
+                ->order('t.translation ASC');
         
         $result = $db->fetchAll($select);
-        $str = $select->__toString();
-        //var_dump($result);die();
+        //$str = $select->__toString();var_dump($str);die();
         if(count($result))return $result;
         return false;
     }

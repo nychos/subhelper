@@ -4,13 +4,9 @@ function Subtitle(data){
         throw new Error("Data is empty");
     }
     this.data = data;
-    
-    console.time("extendWithPhrase");
-    this.extendPhraseObjectsWithPhraseAction();
-    console.timeEnd("extendWithPhrase");
-    console.time("extendWordWithClass");
+    //console.time("extendWordWithClass");
     this.extendWordObjectsWithWordClass();
-    console.timeEnd("extendWordWithClass");
+    //console.timeEnd("extendWordWithClass");
 };
 /**
  * Встановлюємо фрази
@@ -28,25 +24,7 @@ Subtitle.prototype.extendWordObjectsWithWordClass = function(){
     for(var letter in this.data.wordMap){
         var word = this.data.wordMap[letter];
         for(var i in word){
-            //var wordObj = word[i];
-            //console.log(wordObj);
-            //this.data.wordMap[letter][i] = new Word(wordObj);//TODO: наслідувати
             this.data.wordMap[letter][i]['__proto__'] = this.wordObject;
-        }
-    }
-};
-/**
- * Витягує переклад до слова з локального словника
- * @param {String} word
- * @param {Object} dictionary
- * @returns Array of translations
- */
-Subtitle.prototype.getTranslationFromDictionary = function(word, dictionary){
-    //пошук в dictionary
-    var firstLetter = this.getFirstLetter(word);
-    for(var i in dictionary){
-        if(firstLetter === i){
-            return dictionary[i][word];
         }
     }
 };
@@ -80,7 +58,7 @@ Subtitle.prototype.getWordByIndex = function(obj){
     return this.data.wordMap[obj.letter][obj.index];
 };
 /**
- * TODO: переробити низька швидкодія
+ * TODO: розібратись з правильним добавленням та видаленням класів
  * Показує фрази, які містять слово
  * @param {String} word
  * @returns {Object}
@@ -107,7 +85,7 @@ Subtitle.prototype.showSimilarPhrases = function(data){
                         this.phraseChildrenWithActiveWords = [children];
                     for(var k = 0; k < childLength; k++){
                         if(children[k].textContent.toLowerCase() === data.word){
-                            children[k].className = "activeWord";
+                            children[k].classList.add("activeWord");
                         }
                     }
                     
@@ -133,7 +111,7 @@ Subtitle.prototype.clearActiveWords = function(){
             var phraseChildren = this.phraseChildrenWithActiveWords[i];
             var phraseLength = phraseChildren.length;
             for(var j = 0; j < phraseLength; j++){
-                phraseChildren[j].className = "";
+                phraseChildren[j].classList.remove("activeWord");
             }
         }
         this.phraseChildrenWithActiveWords.length = 0;
@@ -144,16 +122,19 @@ Subtitle.prototype.getFirstLetter = function(word){
     return word[0].toLowerCase();
 };
 Subtitle.prototype.extendPhraseObjectsWithPhraseAction = function(){
+    this.phraseObject = new Phrase();
     for(var i in this.data.phrases){
-        //наслідуємо від PraseAction класу
-        var obj = this.data.phrases[i];
-        //obj.index = i;
-        //TODO: потрібно зробити наслідування класу, а не створення нового
-        this.data.phrases[i] =  new Phrase(obj);
+        //наслідуємо від Prase класу
+        this.data.phrases[i].__proto__ =  this.phraseObject;
+        this.data.phrases[i].$phrase = this.$phrases[i];
+        this.data.phrases[i].init();
     }
 };
 Subtitle.prototype.getPhrase = function(id){
   return this.data.phrases[id];
+};
+Subtitle.prototype.updateStorage = function(){
+    storage.save("subtitles", this.data);
 };
 
 
