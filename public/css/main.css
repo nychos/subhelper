@@ -63,4 +63,23 @@ background-color: whitesmoke;
 }
 .phrase span:hover {cursor: pointer;}
 .translated {background-color: #fff !important; border: 1px inset #CCCCCC !important;}
-.waiting {background-color: #d2b45b !important;}
+.phraseStatus {
+    border: 1px solid #68889E;
+    border-radius: 20px;
+    display: inline-block;
+    height: 20px;
+    position: relative;
+    vertical-align: middle;
+    width: 20px;
+    margin: 0px 5px;
+    overflow: hidden;
+}
+.waiting {
+    background-image: url('../img/orange.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    border: 0;
+}
+.process {}
+/*PROGRESS BAR*/
+.progressContainer {background-color: #68889E;}

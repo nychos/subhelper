@@ -30,29 +30,7 @@ Phrase.prototype.getPriority = function(){
     return this.priority;
 };
 Phrase.prototype.toString = function(){
-    return Math.ceil(this.getTranslatedPercent()) + "% translated; status: " + this.statuses[this.status] + " ; priority: " + this.priority;
-};
-Phrase.prototype.sortByPriority = function(){
-    var phrases = app.sub.data.phrases;
-    console.time("sort");
-    var sortPhrases = phrases.sort(function(a,b){
-        return (a.priority < b.priority) ? 1 : -1;
-    });
-    var arr = [];
-    for(var i in sortPhrases){
-       arr.push(sortPhrases[i].$phrase/*.cloneNode(true)*/);
-    }
-    //arr;
-    console.timeEnd("sort");
-    var container = document.getElementsByClassName("subtitle")[0];
-    console.time("remove");
-    container.innerHTML = "";
-    console.timeEnd("remove");
-    console.time("append");
-    for(var i in arr){
-        container.appendChild(arr[i]);
-    }
-    console.timeEnd("append");
+    return this.getTranslatedPercent() + "% translated; status: " + this.statuses[this.status] + " ; priority: " + this.priority;
 };
 Phrase.prototype.defineCountOfWords = function(){
     this.total = this.words.length;
@@ -72,7 +50,9 @@ Phrase.prototype.defineTranslatedWords = function(){
         if(hasTranslation){
             ++translated;
             //i це поряд слова у субтитрі, який має переклад
-            var span = this.$phrase.children[i];
+            try{
+                var span = this.$phrase.children[++i];//div is 0 element
+            }catch(e){console.warn(e);continue;}
             span.className = 'translated';
         }else {
             priority += wordObj.getCountOfPhrases();//формуємо пріоритет фрази
@@ -85,7 +65,7 @@ Phrase.prototype.getStatus = function(){
     return this.statuses[this.status];
 };
 Phrase.prototype.getTranslatedPercent = function(){
-    return 100 * this.translated / this.total;
+    return Math.ceil(100 * this.translated / this.total);
 };
 /**
  * Перевіряє чи кіл-ть перекладених слів досягла 100%
@@ -105,22 +85,37 @@ Phrase.prototype.defineStatus = function(approval){
     }else {
         if(status === 2 || status === 1)this.status = 0;
     }
-    if(status !== this.status)this.changeStatus(status);
+    //якщо фраза знаходиться в процесі, тоді прикріплюємо прогрес-бар
+    (status === 0) ? this.atachProgressBar() : this.detachProgressBar();
+    /*if(status !== this.status)*/this.changeStatus(status);
 };
 Phrase.prototype.changeStatus = function(status){
     /**
      * змінити вигляд показника готовності
      * змінити загальну пройденість субтитрів
      */
-    //console.log("status from %s to %s has been changed!", this.statuses[status], this.statuses[this.status]);
-    //$(this.$phrase).find('img').className = this.statuses[this.status];
     var statusList = this.statuses;
-    this.$phrase.classList.remove(statusList[status]);//видаляємо старий клас
-    this.$phrase.classList.add(statusList[this.status]);//добавляємо новий клас
+    //console.log("Must have this class: " + statusList[this.status]);
+    this.$phrase.firstChild.classList.remove(statusList[status]);//видаляємо старий клас
+    this.$phrase.firstChild.classList.add(statusList[this.status]);//добавляємо новий клас
     if(this.status === 2){
         this.ready = true;
         try{
-            app.sub.defineCountOfReadyPhrases();
-        }catch(e){console.warn(e.getMessage());}
+            app.sub.defineCountOfReadyPhrases();//TODO: створити даний метод для визначення кіл-ті готових фраз
+        }catch(e){console.warn(e);}
     }
+};
+Phrase.prototype.atachProgressBar = function(){
+    if(!this.progressBar){
+        this.progressBar = new ProgressBar(this.$phrase.firstChild);
+        this.progressBar.init();
+        this.progressBar.setValue(this.getTranslatedPercent());
+    }
+};
+Phrase.prototype.detachProgressBar = function(){
+    if(this.progressBar instanceof ProgressBar){
+       this.progressBar.remove();//видаляємо прогрес-контейнер
+       this.progressBar = null; //видаляємо самий об'єкт
+    }
+    //console.log(this.progressBar);
 };

@@ -4,9 +4,9 @@ function Subtitle(data){
         throw new Error("Data is empty");
     }
     this.data = data;
-    //console.time("extendWordWithClass");
+    console.time("extendWordWithClass");
     this.extendWordObjectsWithWordClass();
-    //console.timeEnd("extendWordWithClass");
+    console.timeEnd("extendWordWithClass");
 };
 /**
  * Встановлюємо фрази
@@ -50,7 +50,6 @@ Subtitle.prototype.getWord = function(word){
 };
 /**
  * Витягує Слово по літері на індексу
- * TODO: перевірити чи працює набагато швидше ніж getWord
  * @param {Object} obj
  * @returns Object
  */
@@ -126,9 +125,25 @@ Subtitle.prototype.extendPhraseObjectsWithPhraseAction = function(){
     for(var i in this.data.phrases){
         //наслідуємо від Prase класу
         this.data.phrases[i].__proto__ =  this.phraseObject;
-        this.data.phrases[i].$phrase = this.$phrases[i];
+        this.data.phrases[i].$phrase = this.addStatusContainerToPhrase(this.$phrases[i]);
+        if(i == 0){
+            console.time("defineValuesForGroupOfSimilarProgressBars");
+            this.defineContainerValuesForGroupOfSimilarProgressBars();
+            console.timeEnd("defineValuesForGroupOfSimilarProgressBars");
+        }
+        this.data.phrases[i].index = i;
         this.data.phrases[i].init();
     }
+};
+Subtitle.prototype.addStatusContainerToPhrase = function($elem){
+        var div = document.createElement("div");
+        div.className = "phraseStatus";
+        try{
+             $elem.insertBefore(div, $elem.firstChild);
+             return $elem;
+        }catch(e){
+            console.warn(e);
+        }
 };
 Subtitle.prototype.getPhrase = function(id){
   return this.data.phrases[id];
@@ -136,7 +151,36 @@ Subtitle.prototype.getPhrase = function(id){
 Subtitle.prototype.updateStorage = function(){
     storage.save("subtitles", this.data);
 };
-
-
-
-
+Subtitle.prototype.sortPhrases = function(type){
+    var phrases = this.data.phrases;
+    function sort(arr) {
+        if(type === 'index'){
+            //return arr.slice().sort(function(a,b){return (a.index > b.index) ? 1 : -1;});
+            return Array.prototype.slice.call(arr).sort(function(a,b){return (parseInt(a.index) > parseInt(b.index)) ? 1 : -1;});
+        }else if(type === 'priority'){
+            return arr.slice(0).sort(function(a,b){return (a.priority < b.priority) ? 1 : -1;});
+        }
+    }
+    var sortPhrases = sort(phrases);
+    var arr = [];
+    for(var i in sortPhrases)arr.push(sortPhrases[i].$phrase);
+    var container = document.getElementsByClassName("subtitle")[0];
+    var result = document.getElementById("result");
+    var div = container.cloneNode(false);
+    result.removeChild(container);
+    for(var i in arr)div.appendChild(arr[i]);
+    result.appendChild(div);
+};
+Subtitle.prototype.defineContainerValuesForGroupOfSimilarProgressBars = function(){
+    var progressContainer = this.data.phrases[0].$phrase.firstChild;
+    console.log(progressContainer);
+    var elementStyle = window.getComputedStyle(progressContainer, null);
+    var borderWidth = parseInt(elementStyle.borderLeftWidth);
+    if (isNaN(borderWidth)) borderWidth = 0;
+    var outerWidth = progressContainer.offsetWidth;
+    var outerHeight = progressContainer.offsetHeight; 
+    ProgressBar.prototype.cWidth = outerWidth - (borderWidth * 2);
+    ProgressBar.prototype.cHeight = outerHeight - (borderWidth * 2);
+    console.log("cWidth" + ProgressBar.prototype.cWidth);
+    console.log("cHeight" + ProgressBar.prototype.cHeight);
+};

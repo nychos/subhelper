@@ -224,6 +224,7 @@
                             $('.phrase').off('mouseenter').on('mouseenter', function(){
                                 var id = $(this).data('phrase-id');
                                 var phrase = app.sub.getPhrase(id);
+                                console.log("id: " + id + " data-phrase-id: " + phrase.$phrase.getAttribute("data-phrase-id"));
                                 console.log(phrase.toString());
                             });
                         });
