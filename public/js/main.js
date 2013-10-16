@@ -173,6 +173,26 @@
                                  }
                              }
                           });
+                          //Яндекс.Переклад
+                          $.ajax({
+                            url : "https://translate.yandex.net/api/v1.5/tr.json/translate",
+                            data : {
+                                key : "trnsl.1.1.20131015T171502Z.d0a108edfd08efd8.b4b32462ed18e007414f408ca65a03d2a3342e85",
+                                text : word,
+                                lang : "uk"
+                            },
+                            datatype : 'json',
+                            success : function(response){
+                                var obj = $.parseJSON(response);
+                                console.log(obj);
+                                console.log($("#onlineDictionary .dictionaryBody").text());
+                                if(obj.code === 200){
+                                    var translations = obj.text.join(", ");
+                                    $("#onlineDictionary .dictionaryBody").text(translations);
+                                    console.log(obj.text.join(", "));
+                                }
+                            }
+                           });
                         })
                         .find('input[type=text]').focus();//фокусуємо поле для вводу перекладу
                        //показати всі фрази зі словом
@@ -226,6 +246,18 @@
                                 var phrase = app.sub.getPhrase(id);
                                 console.log("id: " + id + " data-phrase-id: " + phrase.$phrase.getAttribute("data-phrase-id"));
                                 console.log(phrase.toString());
+                            });
+                            
+                            $("#sortSwitcher").off("click").on("click", function(){
+                               console.log("clicked");
+                               var $this = $(this),
+                                   isChecked = $this.is(":checked");
+                               (isChecked)? app.sub.sortPhrases("priority") : app.sub.sortPhrases("index");
+                            });
+                            
+                            $('#sortByStatus').off("change").on("change", function(){
+                                var selected = $(this).find("option:selected").val();
+                                app.sub.sortByStatus(selected);
                             });
                         });
                         

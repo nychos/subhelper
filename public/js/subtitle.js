@@ -57,7 +57,7 @@ Subtitle.prototype.getWordByIndex = function(obj){
     return this.data.wordMap[obj.letter][obj.index];
 };
 /**
- * TODO: розібратись з правильним добавленням та видаленням класів
+ * 
  * Показує фрази, які містять слово
  * @param {String} word
  * @returns {Object}
@@ -183,4 +183,11 @@ Subtitle.prototype.defineContainerValuesForGroupOfSimilarProgressBars = function
     ProgressBar.prototype.cHeight = outerHeight - (borderWidth * 2);
     console.log("cWidth" + ProgressBar.prototype.cWidth);
     console.log("cHeight" + ProgressBar.prototype.cHeight);
+};
+Subtitle.prototype.sortByStatus = function(status){
+    for(var i in this.data.phrases){
+        var phrase = this.data.phrases[i];
+        if(status === "all"){phrase.$phrase.style.display = "block";continue;}
+        (phrase.checkStatus(status)) ? phrase.$phrase.style.display = "block" : phrase.$phrase.style.display = "none";
+    }
 };

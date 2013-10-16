@@ -5,6 +5,7 @@
  *@author Nychka Yaroslav nychka08@yandex.ua
  */
 function ProgressBar(container) {
+    if(!container instanceof HTMLElement)throw new Error("container is not ready!");
     this.container = container;
     this.type = "h";//horizontal
 };
@@ -152,4 +153,7 @@ ProgressBar.prototype.setValue = function(value){
     if(!isNaN(value) && !(value >= 0 && value <= 100))throw new Error("value must be percent in range beetween 1-100 %");
     var result = this.getContainerValue() / 100 * value;
     this.setProgressValue(result);
+};
+ProgressBar.prototype.destroy = function(){
+    this.container.removeChild(this.progressContainer);
 };

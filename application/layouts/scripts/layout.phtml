@@ -40,7 +40,18 @@
                     <!-- hidden iframe end -->
                 </div>
             </div>
-             <div id="aside"></div>
+            <div id="aside">
+                <select id="sortByStatus">
+                    <option value="all">All</option>
+                    <option value="process">Process</option>
+                    <option value="waiting">Waiting</option>
+                    <option value="done">Done</option>
+                </select>
+                <div class="sortSwitcher">	
+                        <input type="checkbox" value="None" id="sortSwitcher" name="check" />
+                        <label for="sortSwitcher"></label>
+                </div>
+            </div>
             <div id="content">
                 this is a content
             </div>

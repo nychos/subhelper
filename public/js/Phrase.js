@@ -11,6 +11,7 @@ function Phrase(){
     this.statuses = ['process', 'waiting', 'done'];
     this.ready = false;
     this.status = 0;
+    this.progressBar = null;
 };
 Phrase.prototype.init = function(){
     this.defineCountOfWords();//this.total
@@ -64,6 +65,9 @@ Phrase.prototype.defineTranslatedWords = function(){
 Phrase.prototype.getStatus = function(){
     return this.statuses[this.status];
 };
+Phrase.prototype.checkStatus = function(status){
+    return status === this.statuses[this.status];
+};
 Phrase.prototype.getTranslatedPercent = function(){
     return Math.ceil(100 * this.translated / this.total);
 };
@@ -86,7 +90,7 @@ Phrase.prototype.defineStatus = function(approval){
         if(status === 2 || status === 1)this.status = 0;
     }
     //якщо фраза знаходиться в процесі, тоді прикріплюємо прогрес-бар
-    (status === 0) ? this.atachProgressBar() : this.detachProgressBar();
+    (this.status === 0) ? this.atachProgressBar() : this.detachProgressBar();
     /*if(status !== this.status)*/this.changeStatus(status);
 };
 Phrase.prototype.changeStatus = function(status){
@@ -106,16 +110,17 @@ Phrase.prototype.changeStatus = function(status){
     }
 };
 Phrase.prototype.atachProgressBar = function(){
-    if(!this.progressBar){
+    if(this.$phrase.firstChild.children.length === 0){
         this.progressBar = new ProgressBar(this.$phrase.firstChild);
         this.progressBar.init();
+        this.progressBar.setValue(this.getTranslatedPercent());
+    }else {
         this.progressBar.setValue(this.getTranslatedPercent());
     }
 };
 Phrase.prototype.detachProgressBar = function(){
     if(this.progressBar instanceof ProgressBar){
-       this.progressBar.remove();//видаляємо прогрес-контейнер
-       this.progressBar = null; //видаляємо самий об'єкт
+         this.progressBar.destroy();//видаляємо прогрес-контейнер
+         delete this.progressBar; //видаляємо самий об'єкт
     }
-    //console.log(this.progressBar);
 };
