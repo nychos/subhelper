@@ -41,7 +41,18 @@
         </div>
         <div class="dictionaryType" id="onlineDictionary">
             <div class="dictionaryTitle">Online dictionary : </div>
-            <div class="dictionaryBody">Перевірка наявності перекладу в онлайн словнику...</div>
+            <div class="dictionaryBody"> <%  if(data.online){
+                if(data.online.translation && data.online.id_user){%>
+                <button data-id-user="<%= data.online.id_user %>"><%= data.online.translation %></button>
+                <% } %>
+                <% /*});*/ %>
+                <% }else {%>
+                <div class="noRecords">немає записів</div>
+                <% }%>
+            </div>
+            <div class="translationMessage">
+                <% if(data.online){ %> <%= data.online.isMatched.message %><% } %>
+            </div>
         </div>
     </div>
 </div>

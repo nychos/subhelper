@@ -62,6 +62,23 @@ class IndexController extends Zend_Controller_Action
              }
          }
     }
+    public function findWordInOnlineDictionary($word){
+        $yandex = "https://translate.yandex.net/api/v1.5/tr.json/translate?";
+        $yandex .= "key=trnsl.1.1.20131015T171502Z.d0a108edfd08efd8.b4b32462ed18e007414f408ca65a03d2a3342e85&";
+        $yandex .= "text=".$word."&";
+        $yandex .= "lang=uk";
+        
+        $response = file_get_contents($yandex);
+        $result = json_decode($response);
+        //TODO: перевірити чи текст на тій мові на якій вказаний параметр lang
+        if($result->code === 200){
+            $translation = $result->text[0];
+            if(!preg_match("/.*[a-z].*/i", $translation)){
+                return $translation;//TODO: словник повертає один переклад поки що
+            }
+        }
+        return false;
+    }
     /**
      * Добавлення перекладу в словник
      */
@@ -75,10 +92,13 @@ class IndexController extends Zend_Controller_Action
             $data['word'] = $this->getRequest()->getParam('word');
             $id_translation = $this->getRequest()->getParam('id_translation');
             $referrer = $this->getRequest()->getParam('id_user');
+            $useOnlineTranslationFlag = false;
+            if(intval($referrer) === 2)$useOnlineTranslationFlag = true;
             $data['id_user'] = 1; //TODO : from Session
             $package = array("id" => $id_translation);//для переміщення слова у власний словник
             ($referrer) ? $package['id_user'] = $referrer : $package['id_user'] = $data['id_user'];
             $translations = new Application_Model_Translations();
+            $result = NULL;
             if($id_translation){
                 $data['id_translation'] = $id_translation;
                 //використовуємо переклад
@@ -90,13 +110,23 @@ class IndexController extends Zend_Controller_Action
                 }
             }else {
                 (strlen($translation) > 0) ? $data['translation'] = $translation : $this->message("Translation not defined", $translation, "error");
-                //добавлення нового перекладу
-                if($result = $translations->addTranslation($data)){
+                if($referrer)$data['referrer'] = $referrer;
+                ($useOnlineTranslationFlag) ? $result = $translations->useOnlineTranslation($data) : $result = $translations->addTranslation($data);
+                if($result){
                     $this->message("Successfully added new translation", array("id" => $result, "id_user" => $data['id_user']));
                 }else {
                     $this->message("Translation adding failed", $result, "error");
                 }
             }
+         }
+    }
+    //перевіряє чи переклад співпав з тим що в користувацькій базі
+    public function isTranslationCorrect($translation, $wordData, $matchedMessage, $notMatchedMessage){
+         $isMatched = $this->checkTranslation($translation, $wordData);
+         if($isMatched){
+             return array('match' => 1, 'message' => $matchedMessage);
+         }else {
+             return array('match' => 0, 'message' => $notMatchedMessage);
          }
     }
     /**
@@ -112,23 +142,13 @@ class IndexController extends Zend_Controller_Action
             $id_user = 1; //TODO : from Session
             $translations = new Application_Model_Translations();
             $package = array();
-            //перевіряє чи переклад співпав з тим що в користувацькій базі
-            function isTranslationCorrect($self, $translation, $wordData, $matchedMessage, $notMatchedMessage){
-                 $isMatched = $self->checkTranslation($wordData, $translation);
-                 if($isMatched){
-                     return array('match' => 1, 'message' => $matchedMessage);
-                 }else {
-                     return array('match' => 0, 'message' => $notMatchedMessage);
-                 }
-            }
             $result = $translations->findTranslations($word, $id_user);
-            //var_dump($result);die();
             //якщо знайдено у власному словнику
             if($result){
                 if(isset($result['my'])){
-                     $data = $result['my'];
+                    $data = $result['my'];
                     //перевірити на правильність
-                    $isMatched = isTranslationCorrect($this, $translation,$data, "Переклад співпав з вашим власним", "Переклад не співпав, добавте новий або перевірте правильність");
+                    $isMatched = $this->isTranslationCorrect($translation,$data, "Переклад співпав з вашим власним", "Переклад не співпав, добавте новий або перевірте правильність");
                     $data['isMatched'] = $isMatched;
                     $package['my'] = $data;
                 }
@@ -136,12 +156,25 @@ class IndexController extends Zend_Controller_Action
                     //робимо пошук в загальному словнику
                     //перевірити на правильність
                     $data = $result['common'];
-                    $isMatched = isTranslationCorrect($this, $translation,  $data, "Переклад, знайдений в загальному словнику, співпав", "Переклад не співпав з тими що містяться в загальному словнику");
+                    $isMatched = $this->isTranslationCorrect($translation,  $data, "Переклад, знайдений в загальному словнику, співпав", "Переклад не співпав з тими що містяться в загальному словнику");
                     $data['isMatched'] = $isMatched;
                     $package['common'] = $data;
                 }
             }//no results
-            //var_dump($result);die();
+            
+            $onlineTranslation = $this->findWordInOnlineDictionary($word);
+            if($onlineTranslation){
+                $isOnlineUnique = $this->checkOnlineTranslationForDuplicates($onlineTranslation, $result);
+                if($isOnlineUnique){
+                    $package['online']['translation'] = $onlineTranslation;
+                    $package['online']['id_user'] = 2;//yandex user
+                    $isMatched = $this->isTranslationCorrect($translation,  $onlineTranslation, "Переклад, знайдений в онлайн словнику, співпав", "Переклад не співпав з тими що містяться в онлайн словнику");
+                    $package['online']['isMatched'] = $isMatched;
+                    if(isset($package['my'][0]['id_word']))$id_word = $package['my'][0]['id_word'];
+                    if(isset($package['common'][0]['id_word']))$id_word = $package['common'][0]['id_word'];
+                    if(isset($id_word))$package['online']['id_word'] = $id_word;
+                }
+            }
             if(count($package)){
                 $this->message("Переклади витягнені з ".count($package). " джерел", $package);
             }else {
@@ -149,15 +182,29 @@ class IndexController extends Zend_Controller_Action
             }
          }//end xmlrequest
     }
+    public function checkOnlineTranslationForDuplicates($onlineTranslation, $result){
+        if($result){
+            foreach($result as $value){
+                foreach($value as $i => $translation){
+                    if($onlineTranslation === $translation['translation'])return false;
+                }
+            }
+        }
+        return true;
+    }
     /**
      * Перевіряє чи переклад введений користувачем являється правильним
      * @param Array $arr - масив з перекладами
      * @param String $translation - переклад введений користувачем
      * @return boolean
      */
-    public function checkTranslation($arr, $translation)
+    public function checkTranslation($translation, $arr)
     {
-        foreach($arr as $value) if($translation === $value['translation'])return true;
+        if(is_array($arr)){
+            foreach($arr as $value) if($translation === $value['translation'])return true;   
+        }else{
+            if($translation === $arr)return true;
+        }
         return false;
     }
     /**

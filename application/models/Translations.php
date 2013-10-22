@@ -145,9 +145,23 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
         return $result;
     }
     /**
+     * Добавляє унікальний переклад онлайн словника, а тоді звязує його з користувацьким
+     * @param Array $data
+     * @return Integer
+     */
+    public function useOnlineTranslation($data)
+    {
+        
+        if($lastId = intval($this->addTranslation($data, true))){
+            $data['id_translation'] = $lastId;
+            if($this->useTranslation($data))return $lastId;
+        }
+        return false;
+    }
+    /**
      * Добавлення нового перекладу
      */
-    public function addTranslation($data)
+    public function addTranslation($data, $flag = false)
     {
         if(count($data)){
             //1. витягнути ідентифікатор
@@ -167,8 +181,10 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
                     return $id_translation;
                 }
             }else {
+                $id_user = NULL;
+                ($flag) ? $id_user = $data['referrer'] : $id_user = $data['id_user'];
                 $result = $db->insert('translations', array(
-                    'id_user' => $data['id_user'],
+                    'id_user' => $id_user,//$data['id_user'],
                     'id_word' => $id_word, 
                     'translation' => trim(iconv('utf8', 'cp1251', $data['translation']))
                 ));
@@ -207,6 +223,8 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
     {
         if(count($data)){
             $db = $this->getAdapter();
+            unset($data['translation']);
+            //if(isset($data['id_word']))unset($data['word']);
             if(isset($data['word'])){
                 $data['id_word'] = $this->getWordId($data['word']);// => 3 items : id_user, id_translation, referrer
                 unset($data['word']);
@@ -217,10 +235,8 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
                         ->where('id_word = ?', $data['id_word']);
             $rows = $db->fetchAll($select);
             if(count($rows) === 0){
-                $result = $db->insert('users_translations', $data);
-                return $result;
+                if($db->insert('users_translations', $data))return true;
             }
-            //var_dump($rows);die();//TODO: протестувати
         }
         return false;
     }
