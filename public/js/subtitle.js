@@ -120,7 +120,7 @@ Subtitle.prototype.clearActiveWords = function(){
 Subtitle.prototype.getFirstLetter = function(word){
     return word[0].toLowerCase();
 };
-Subtitle.prototype.extendPhraseObjectsWithPhraseAction = function(){
+Subtitle.prototype.extendPhraseObjectsWithPhraseAction = function(callback){
     this.phraseObject = new Phrase();
     for(var i in this.data.phrases){
         //наслідуємо від Prase класу
@@ -134,6 +134,7 @@ Subtitle.prototype.extendPhraseObjectsWithPhraseAction = function(){
         this.data.phrases[i].index = i;
         this.data.phrases[i].init();
     }
+    if(typeof callback === "function")callback.call(this);
 };
 Subtitle.prototype.addStatusContainerToPhrase = function($elem){
         var div = document.createElement("div");
@@ -171,9 +172,13 @@ Subtitle.prototype.sortPhrases = function(type){
     for(var i in arr)div.appendChild(arr[i]);
     result.appendChild(div);
 };
+/**
+ * Визначаємо параметри (ширину та висоту) для елемента фрази, який є загальним
+ * @returns {undefined}
+ */
 Subtitle.prototype.defineContainerValuesForGroupOfSimilarProgressBars = function(){
     var progressContainer = this.data.phrases[0].$phrase.firstChild;
-    console.log(progressContainer);
+    //console.log(progressContainer);
     var elementStyle = window.getComputedStyle(progressContainer, null);
     var borderWidth = parseInt(elementStyle.borderLeftWidth);
     if (isNaN(borderWidth)) borderWidth = 0;
@@ -181,8 +186,8 @@ Subtitle.prototype.defineContainerValuesForGroupOfSimilarProgressBars = function
     var outerHeight = progressContainer.offsetHeight; 
     ProgressBar.prototype.cWidth = outerWidth - (borderWidth * 2);
     ProgressBar.prototype.cHeight = outerHeight - (borderWidth * 2);
-    console.log("cWidth" + ProgressBar.prototype.cWidth);
-    console.log("cHeight" + ProgressBar.prototype.cHeight);
+    //console.log("cWidth" + ProgressBar.prototype.cWidth);
+    //console.log("cHeight" + ProgressBar.prototype.cHeight);
 };
 Subtitle.prototype.sortByStatus = function(status){
     for(var i in this.data.phrases){
@@ -190,4 +195,29 @@ Subtitle.prototype.sortByStatus = function(status){
         if(status === "all"){phrase.$phrase.style.display = "block";continue;}
         (phrase.checkStatus(status)) ? phrase.$phrase.style.display = "block" : phrase.$phrase.style.display = "none";
     }
+};
+Subtitle.prototype.getPercentOfFinishedPhrases = function(){
+    var phrases = this.data.phrases;
+    var waiting = 0;
+    var total = phrases.length;
+    for(var i in phrases){
+        if(phrases[i].status === 1)++waiting;
+    }
+    var percent = waiting *  100 / total;
+    //var obj = {waiting: waiting, total : total, process : process};
+    return percent;
+};
+/*
+ * Встановлюємо загальний прогрес бар 
+ */
+Subtitle.prototype.setPhrasesProgressBar = function(container){
+    this.phrasesProgressBar = new ProgressBar(container);
+    this.phrasesProgressBar.defineContainerParameters();
+    this.phrasesProgressBar.init();
+};
+Subtitle.prototype.triggerPhrasesProgressBar = function(){
+    if(!this.phrasesProgressBar instanceof ProgressBar) throw new Error("phrasesProgressBar is not defined!");
+    var percent = this.getPercentOfFinishedPhrases();
+    console.log(percent);
+    this.phrasesProgressBar.setValue(percent);
 };

@@ -68,15 +68,15 @@ class IndexController extends Zend_Controller_Action
         $yandex .= "text=".$word."&";
         $yandex .= "lang=uk";
         
-        $response = file_get_contents($yandex);
-        $result = json_decode($response);
-        //TODO: перевірити чи текст на тій мові на якій вказаний параметр lang
-        if($result->code === 200){
-            $translation = $result->text[0];
-            if(!preg_match("/.*[a-z].*/i", $translation)){
-                return $translation;//TODO: словник повертає один переклад поки що
+            $response = file_get_contents($yandex);
+            $result = json_decode($response);
+            //TODO: перевірити чи текст на тій мові на якій вказаний параметр lang
+            if($result->code === 200){
+                $translation = $result->text[0];
+                if(!preg_match("/.*[a-z].*/i", $translation)){
+                    return $translation;//TODO: словник повертає один переклад поки що
+                }
             }
-        }
         return false;
     }
     /**
@@ -124,7 +124,7 @@ class IndexController extends Zend_Controller_Action
     public function isTranslationCorrect($translation, $wordData, $matchedMessage, $notMatchedMessage){
          $isMatched = $this->checkTranslation($translation, $wordData);
          if($isMatched){
-             return array('match' => 1, 'message' => $matchedMessage);
+             return array('match' => $isMatched, 'message' => $matchedMessage);
          }else {
              return array('match' => 0, 'message' => $notMatchedMessage);
          }
@@ -143,7 +143,7 @@ class IndexController extends Zend_Controller_Action
             $translations = new Application_Model_Translations();
             $package = array();
             $result = $translations->findTranslations($word, $id_user);
-            //якщо знайдено у власному словнику
+            //якщо знайдено у власному словнику або загальному, в інакшому випадку шукаємо в онлайн словнику
             if($result){
                 if(isset($result['my'])){
                     $data = $result['my'];
@@ -160,27 +160,54 @@ class IndexController extends Zend_Controller_Action
                     $data['isMatched'] = $isMatched;
                     $package['common'] = $data;
                 }
-            }//no results
+            }else {
             
-            $onlineTranslation = $this->findWordInOnlineDictionary($word);
-            if($onlineTranslation){
-                $isOnlineUnique = $this->checkOnlineTranslationForDuplicates($onlineTranslation, $result);
-                if($isOnlineUnique){
-                    $package['online']['translation'] = $onlineTranslation;
-                    $package['online']['id_user'] = 2;//yandex user
-                    $isMatched = $this->isTranslationCorrect($translation,  $onlineTranslation, "Переклад, знайдений в онлайн словнику, співпав", "Переклад не співпав з тими що містяться в онлайн словнику");
-                    $package['online']['isMatched'] = $isMatched;
-                    if(isset($package['my'][0]['id_word']))$id_word = $package['my'][0]['id_word'];
-                    if(isset($package['common'][0]['id_word']))$id_word = $package['common'][0]['id_word'];
-                    if(isset($id_word))$package['online']['id_word'] = $id_word;
+                $onlineTranslation = $this->findWordInOnlineDictionary($word);
+                if($onlineTranslation){
+                    $isOnlineUnique = $this->checkOnlineTranslationForDuplicates($onlineTranslation, $result);
+                    if($isOnlineUnique){
+                        $package['online']['translation'] = $onlineTranslation;
+                        $package['online']['id_user'] = 2;//yandex user
+                        $isMatched = $this->isTranslationCorrect($translation,  $onlineTranslation, "Переклад, знайдений в онлайн словнику, співпав", "Переклад не співпав з тими що містяться в онлайн словнику");
+                        $package['online']['isMatched'] = $isMatched;
+                        if(isset($package['my'][0]['id_word']))$id_word = $package['my'][0]['id_word'];
+                        if(isset($package['common'][0]['id_word']))$id_word = $package['common'][0]['id_word'];
+                        if(isset($id_word))$package['online']['id_word'] = $id_word;
+                    }
                 }
             }
+            /**
+             * Формуємо дані для бонусної системи нарахування
+             */
+            $bonusInfo = array();
+            $bonusInfo['issetMy'] = isset($package['my']);
+            $bonusInfo['issetCommon'] = isset($package['common']);
+            $bonusInfo['issetOnline'] = isset($package['online']);
+            $bonusInfo['myMatch'] = $bonusInfo['issetMy'] && $package['my']['isMatched']['match'];
+            $bonusInfo['commonMatch'] = $bonusInfo['issetCommon'] && $package['common']['isMatched']['match'];
+            $bonusInfo['onlineMatch'] = $bonusInfo['issetOnline'] && $package['online']['isMatched']['match'];
+            
+            $package['bonus'] = $bonusInfo;
+            //$bonus = $this->chargeBonuses($bonusInfo);
+            
             if(count($package)){
                 $this->message("Переклади витягнені з ".count($package). " джерел", $package);
             }else {
                 $this->message("Переклад не знайдено в базі", array("word" => $word, "translation" => $translation));
             }
          }//end xmlrequest
+    }
+    /**
+     * @param array $bonusInfo
+     */
+    public function chargeBonuses(Array $arr){
+        $isMatchedWithOthers = $arr['commonMatch'] || $arr['onlineMatch'];
+ 
+        if(!$arr['issetMy'] && $isMatchedWithOthers){// +1 блискавка
+            
+        }else if($arr['myMatch']){//+1 заряд до перекладу
+            
+        }else {return false;}
     }
     public function checkOnlineTranslationForDuplicates($onlineTranslation, $result){
         if($result){
@@ -201,7 +228,7 @@ class IndexController extends Zend_Controller_Action
     public function checkTranslation($translation, $arr)
     {
         if(is_array($arr)){
-            foreach($arr as $value) if($translation === $value['translation'])return true;   
+            foreach($arr as $value) if($translation === $value['translation'])return $value['id'];//true;   
         }else{
             if($translation === $arr)return true;
         }

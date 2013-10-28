@@ -1,6 +1,6 @@
 /**
  *TODO: add more options outside class
- *
+ *@param HTMLElement container Контейнер для прогрес-бару
  *@date 12 October 2013
  *@author Nychka Yaroslav nychka08@yandex.ua
  */
@@ -39,8 +39,6 @@ ProgressBar.prototype.setProgressHeight = function(value){
     this.pWidth = this.cWidth;
 };
 ProgressBar.prototype.changePosition = function(){
-//    console.log("pheight: " + this.pHeight);
-//    console.log("pwidth: "+ this.pWidth);
     this.progressContainer.style.height = this.pHeight + "px";
     this.progressContainer.style.width = this.pWidth + "px";
 };
@@ -93,28 +91,26 @@ ProgressBar.prototype.progressClass = "progressContainer";
  *Початок програми
  */
 ProgressBar.prototype.init = function(){
-    //this.cWidth = this.container.offsetWidth;//this.getInnerValue(this.container, "width");//
-    //this.cHeight = this.container.offsetHeight;this.getInnerValue(this.container, "height");//
     this.container.style.position = "relative";
+    this.container.style.overflow = "hidden";
     (this.cWidth <= this.cHeight) ? this.type = "v" : this.type = "h";
     this.createProgressContainer();
 };
 /**
- * TODO: допрацювати
-*Перевіряємо чи прогрес-контейнер уже існує, щоб не створювати зайві
-*/
+ * Визначити параметри контейнера
+ */
+ProgressBar.prototype.defineContainerParameters = function(){
+    this.cWidth = this.getInnerValue(this.container, 0);
+    this.cHeight = this.getInnerValue(this.container, 1);
+    console.log("width: " + this.cWidth);
+    console.log("height: " + this.cHeight);
+};
+/**
+ * 
+ *Перевіряємо чи прогрес-контейнер уже існує, щоб не створювати зайві
+ */
 ProgressBar.prototype.checkProgressContainer = function(){
-    try{
-        //var progressContainer = document.getElementsByClassName(this.progressClass);
-        var length = progressContainer.length;
-        if(length === 0){
-            this.createProgressContainer();
-        }else if(length > 1){
-            progressContainer.length = 1;   
-        }
-        this.progressContainer = progressContainer[0];
-        this.redefineProgressPosition();
-    }catch(e){console.warn(e);};
+   
 };
 /*
 *добавляє стильові параметри для прогрес-контейнера

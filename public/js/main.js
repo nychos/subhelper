@@ -107,7 +107,7 @@
                                         $('.word-dialog').empty();
                                         $this.render('templates/translation-check-dialog.tmpl', {data : obj.data, word : word, translation : translation}).prependTo($('.word-dialog')).then(function(content){
                                             //шукаємо слово в Онлайн Словнику та вставляємо його в наше діалогове вікно
-                                           app.trigger('find-word-in-online-dictionary', {content : $("#onlineDictionary .dictionaryBody"), word: word});
+                                           //app.trigger('find-word-in-online-dictionary', {content : $("#onlineDictionary .dictionaryBody"), word: word});
                                            //показати переклад у власному списку
                                            var my = $('#myDictionary');
                                            var body = my.find('.dictionaryBody');
@@ -248,16 +248,20 @@
                         this.render('templates/phrases.tmpl', {data : app.sub.data.phrases}).then(function(content){
                             app.phrasesContainer.html(unescape(content));
                             app.sub.setPhrases($('.phrase'));//кешуємо фрази
+                            var phrasesProgressBar = document.getElementById('phrasesProgressBar');
+                            app.sub.setPhrasesProgressBar(phrasesProgressBar);
                             console.time("extendWithPhrase");
-                            app.sub.extendPhraseObjectsWithPhraseAction();
+                            app.sub.extendPhraseObjectsWithPhraseAction(function(){
+                                app.sub.triggerPhrasesProgressBar();
+                            });
                             console.timeEnd("extendWithPhrase");
                             app.trigger('setup-dictionary');
                             //наведення на фразу
                             $('.phrase').off('mouseenter').on('mouseenter', function(){
                                 var id = $(this).data('phrase-id');
                                 var phrase = app.sub.getPhrase(id);
-                                console.log("id: " + id + " data-phrase-id: " + phrase.$phrase.getAttribute("data-phrase-id"));
-                                console.log(phrase.toString());
+                                //console.log("id: " + id + " data-phrase-id: " + phrase.$phrase.getAttribute("data-phrase-id"));
+                                //console.log(phrase.toString());
                             });
                             
                             $("#sortSwitcher").off("click").on("click", function(){
@@ -311,7 +315,7 @@
                 //пошук фраз по слову
                 this.bind('phrases-loaded', function(){
                     //при нажаті на слово
-                    $('#result').on('click','.phrase span', function(){
+                    $('#result').off('click').on('click','.phrase span', function(){
                          var $this = $(this);
                          //слово знайти у wordMap
                          var word = $this.text().toLowerCase();
@@ -408,6 +412,7 @@
                     if(result){
                         console.info("Translation successfully added");
                         //if(!confirm("Continue translation?"))$('.word-dialog').remove();
+                        app.sub.triggerPhrasesProgressBar();
                     }
                 });
                 });//app end
