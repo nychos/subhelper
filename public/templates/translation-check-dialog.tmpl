@@ -1,0 +1,58 @@
+<div id="translationCheckDialog">
+    <form action="#">
+        <input type="hidden" name="word" value="<%= word %>" />
+        <input type="hidden" name="translation" value="<%= translation %>" />
+        <input type="hidden" name="referrer" value="0" />
+        <input type="hidden" name="id_translation" value="0" />
+    </form>
+    <div id="translationCheckHeader">
+        <strong><%= word %></strong> - <strong><%= translation %></strong>
+    </div>
+    <div id="translationCheckBody">
+        <div class="dictionaryType" id="myDictionary">
+            <div class="dictionaryTitle">My dictionary : </div>
+            <div class="dictionaryBody"> <%  if(data.my){jQuery.each(data.my, function(i, value){
+                if(value.translation){%>
+                <button data-id="<%= value.id %>" data-id-user="<%= value.id_user %>"><%= value.translation %></button>
+                <% } %>
+                <% }); %>
+                <% }else {%>
+                    <div class="noRecords">немає записів</div>
+                <% }%>
+            </div>
+            <div class="translationMessage">
+                <% if(data.my){ %> <%= data.my.isMatched.message %><% } %>
+            </div>
+        </div>
+        <div class="dictionaryType" id="commonDictionary">
+            <div class="dictionaryTitle">Common dictionary : </div>
+            <div class="dictionaryBody"> <%  if(data.common){jQuery.each(data.common, function(i, value){
+                if(value.translation && value.id_user){%>
+                <button  data-id="<%= value.id %>" data-id-user="<%= value.id_user %>"><%= value.translation %></button>
+                <% } %>
+                <% }); %>
+                <% }else {%>
+                <div class="noRecords">немає записів</div>
+                <% }%>
+            </div>
+            <div class="translationMessage">
+                <% if(data.common){ %> <%= data.common.isMatched.message %><% } %>
+            </div>
+        </div>
+        <div class="dictionaryType" id="onlineDictionary">
+            <div class="dictionaryTitle">Online dictionary : </div>
+            <div class="dictionaryBody"> <%  if(data.online){
+                if(data.online.translation && data.online.id_user){%>
+                <button data-id-user="<%= data.online.id_user %>"><%= data.online.translation %></button>
+                <% } %>
+                <% /*});*/ %>
+                <% }else {%>
+                <div class="noRecords">немає записів</div>
+                <% }%>
+            </div>
+            <div class="translationMessage">
+                <% if(data.online){ %> <%= data.online.isMatched.message %><% } %>
+            </div>
+        </div>
+    </div>
+</div>
