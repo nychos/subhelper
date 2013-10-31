@@ -16,6 +16,8 @@ class IndexController extends Zend_Controller_Action
     public function init()
     {
         /* Initialize action controller here */
+        $this->lightning = new Application_Model_Lightnings();
+        $this->charge = new Application_Model_Charges();
     }
 
     public function indexAction()
@@ -87,6 +89,11 @@ class IndexController extends Zend_Controller_Action
         
          $this->_helper->layout()->disableLayout();
          if($this->getRequest()->isXmlHttpRequest()){
+             //$session = new Zend_Session_Namespace('eventsCoordinator');
+             //var_dump($session->events);die();
+             //var_dump(Custom_Events::getEvents());die();
+             //var_dump(Custom_Events::trigger("user-added-translation"));die();
+             //var_dump(Custom_Events::isRegistered('user-added-translation'));die();
             $data = array();
             $translation = trim($this->getRequest()->getParam('translation'));
             $data['word'] = $this->getRequest()->getParam('word');
@@ -104,6 +111,7 @@ class IndexController extends Zend_Controller_Action
                 //використовуємо переклад
                 if($referrer)$data['referrer'] = $referrer;
                 if($result = $translations->useTranslation($data)){
+                    Custom_Events::trigger("user-added-translation");
                     $this->message("Successfully used translation", $package);
                 }else {
                     $this->message("Adding translation failed", $result, "error");
@@ -113,6 +121,7 @@ class IndexController extends Zend_Controller_Action
                 if($referrer)$data['referrer'] = $referrer;
                 ($useOnlineTranslationFlag) ? $result = $translations->useOnlineTranslation($data) : $result = $translations->addTranslation($data);
                 if($result){
+                    Custom_Events::trigger("user-added-translation");
                     $this->message("Successfully added new translation", array("id" => $result, "id_user" => $data['id_user']));
                 }else {
                     $this->message("Translation adding failed", $result, "error");
@@ -179,16 +188,37 @@ class IndexController extends Zend_Controller_Action
             /**
              * Формуємо дані для бонусної системи нарахування
              */
-            $bonusInfo = array();
-            $bonusInfo['issetMy'] = isset($package['my']);
-            $bonusInfo['issetCommon'] = isset($package['common']);
-            $bonusInfo['issetOnline'] = isset($package['online']);
-            $bonusInfo['myMatch'] = $bonusInfo['issetMy'] && $package['my']['isMatched']['match'];
-            $bonusInfo['commonMatch'] = $bonusInfo['issetCommon'] && $package['common']['isMatched']['match'];
-            $bonusInfo['onlineMatch'] = $bonusInfo['issetOnline'] && $package['online']['isMatched']['match'];
+            $info = array();
+            $info['my'] = isset($package['my']);
+            $info['common'] = isset($package['common']);
+            $info['online'] = isset($package['online']);
+            $info['myMatch'] = $info['my'] && $package['my']['isMatched']['match'];
+            $info['commonMatch'] = $info['common'] && $package['common']['isMatched']['match'];
+            $info['onlineMatch'] = $info['online'] && $package['online']['isMatched']['match'];
             
-            $package['bonus'] = $bonusInfo;
-            //$bonus = $this->chargeBonuses($bonusInfo);
+            //влучання в переклад Словників
+            if(!$info['my'] && ($info['commonMatch'] || $info['onlineMatch'])){
+               $result = Custom_Events::bind(array(
+                    'location' => $this->lightning,
+                    'method' => 'doLightning',
+                    'event' => 'user-added-translation',
+                    'data' => true)
+                );
+            }else if($info['my'] && !$info['myMatch']){
+                Custom_Events::bind(array(
+                   'location' => $this->lightning,
+                    'method' => 'doLightning',
+                    'event' => 'user-added-translation',
+                    'data' => false)
+                );
+            }else if($info['myMatch']){
+                $id = $package['my']['isMatched']['match'];
+                if($data = $this->compareMatchedTranslation($package['my'], $id)){
+                    //call_user_func(array($this->charge,'doCharge'),$data);//alternative way of calling
+                    //$data['increase'] = 0; for discharging
+                    $this->charge->doCharge($data);
+                }
+            }
             
             if(count($package)){
                 $this->message("Переклади витягнені з ".count($package). " джерел", $package);
@@ -198,16 +228,16 @@ class IndexController extends Zend_Controller_Action
          }//end xmlrequest
     }
     /**
-     * @param array $bonusInfo
+     * 
+     * @param array $arr
+     * @param type $id
+     * @return boolean
      */
-    public function chargeBonuses(Array $arr){
-        $isMatchedWithOthers = $arr['commonMatch'] || $arr['onlineMatch'];
- 
-        if(!$arr['issetMy'] && $isMatchedWithOthers){// +1 блискавка
-            
-        }else if($arr['myMatch']){//+1 заряд до перекладу
-            
-        }else {return false;}
+    public function compareMatchedTranslation(Array $arr, $id){
+        foreach($arr as $value){
+            if(intval($value['id']) === intval($id))return $value;
+        }
+        return false;
     }
     public function checkOnlineTranslationForDuplicates($onlineTranslation, $result){
         if($result){

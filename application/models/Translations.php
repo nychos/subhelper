@@ -12,30 +12,19 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
     {
         if($word){
             $word = strtolower($word);
-            /*
-                SELECT DISTINCT `t`.*, `ut`.`id_user` AS `tuser` FROM `translations` AS `t`
-                LEFT JOIN `users_translations` AS `ut` ON t.id=ut.id_translation
-                INNER JOIN `words` ON words.id=ut.id_word OR words.id=t.id_word
-                WHERE (word = 'somebody')
-                ORDER BY `t`.`translation` ASC
-             */
-            
-            /*
-             *  SELECT  `t`.*, `ut`.`id_user` AS `tuser` FROM `translations` AS `t`
-                LEFT JOIN `users_translations` AS `ut` ON t.id=ut.id_translation
-                INNER JOIN `words` ON words.id=ut.id_word OR words.id=t.id_word
-                WHERE (word = 'somebody' AND ((ut.id_user = 1) OR NOT EXISTS (
-                    SELECT b.id_user as tuser FROM translations as t2
-                    LEFT JOIN `users_translations` AS `b` ON t2.id=b.id_translation
-                    INNER JOIN `words` ON words.id=b.id_word OR words.id=t2.id_word
-                    WHERE b.id_user = 1
-                    AND b.id_translation = ut.id_translation
-                )
-                )
-                )
-             */
             $id_user = 1;
-            $select = $this->_db->select("t.*")
+            $query = $this->getAdapter()->query("
+                SELECT DISTINCT `t`.*, `ut`.`id_user` AS `tuser`, IF(ut.id_translation IS NULL, 't', 'ut') as location FROM `translations` AS `t`
+                LEFT JOIN `users_translations` AS `ut` ON t.id=ut.id_translation
+                INNER JOIN `words` ON words.id=ut.id_word OR words.id=t.id_word WHERE (word = ?) AND (ut.id_user = 1 OR NOT EXISTS (
+                        SELECT b.id_user as tuser FROM translations as t2
+                        LEFT JOIN `users_translations` AS `b` ON t2.id=b.id_translation
+                        INNER JOIN `words` ON words.id=b.id_word OR words.id=t2.id_word
+                        WHERE b.id_user = ?
+                        AND b.id_translation = ut.id_translation
+                        )) ORDER BY `t`.`translation` ASC", array($word, $id_user));
+              
+            /*$select = $this->_db->select("t.*")
                 ->distinct()
                 ->from(array("t" => "translations"))
                 ->joinLeft(array('ut' => "users_translations"),'t.id=ut.id_translation', array("tuser" => "ut.id_user"))
@@ -50,11 +39,10 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
                         )"
                 , $id_user)
                 ->order('t.translation ASC');
-           $str = $select->__toString();
-          
-           $result = $this->getAdapter()->fetchAll($select);
-           //var_dump($str);die();
-          
+           $str = $select->__toString();*/
+           
+           $result = $query->fetchall();
+           //var_dump($result);
             //якщо є записи
             if(count($result) > 0){
                 $arr = array();
@@ -77,9 +65,8 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
                         $arr[$dictionary][$i]['translation'] =  trim(iconv('cp1251', 'utf8',$value['translation']));
                         $arr[$dictionary][$i]['id_word'] = $value['id_word'];
                         $arr[$dictionary][$i]['added'] = $value['added'];
+                        $arr[$dictionary][$i]['location'] = $value['location'];
                 }
-                //var_dump($arr);die();
-               
                 return $arr;
             }
         }
