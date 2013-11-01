@@ -14,7 +14,10 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
             $word = strtolower($word);
             $id_user = 1;
             $query = $this->getAdapter()->query("
-                SELECT DISTINCT `t`.*, `ut`.`id_user` AS `tuser`, IF(ut.id_translation IS NULL, 't', 'ut') as location FROM `translations` AS `t`
+                SELECT DISTINCT `t`.*, `ut`.`id_user` AS `tuser`,
+                IF(t.charge IS NULL, ut.charge, t.charge) as charge,
+                IF(ut.id_translation IS NULL, 't', 'ut') as location 
+                FROM `translations` AS `t`
                 LEFT JOIN `users_translations` AS `ut` ON t.id=ut.id_translation
                 INNER JOIN `words` ON words.id=ut.id_word OR words.id=t.id_word WHERE (word = ?) AND (ut.id_user = 1 OR NOT EXISTS (
                         SELECT b.id_user as tuser FROM translations as t2
@@ -66,6 +69,7 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
                         $arr[$dictionary][$i]['id_word'] = $value['id_word'];
                         $arr[$dictionary][$i]['added'] = $value['added'];
                         $arr[$dictionary][$i]['location'] = $value['location'];
+                        $arr[$dictionary][$i]['charge'] = $value['charge'];
                 }
                 return $arr;
             }

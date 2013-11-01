@@ -204,6 +204,7 @@ class IndexController extends Zend_Controller_Action
                     'event' => 'user-added-translation',
                     'data' => true)
                 );
+            //додатковий переклад
             }else if($info['my'] && !$info['myMatch']){
                 Custom_Events::bind(array(
                    'location' => $this->lightning,
@@ -211,12 +212,16 @@ class IndexController extends Zend_Controller_Action
                     'event' => 'user-added-translation',
                     'data' => false)
                 );
+            //збільшення заряду при вказанні правильного перекладу    
             }else if($info['myMatch']){
                 $id = $package['my']['isMatched']['match'];
                 if($data = $this->compareMatchedTranslation($package['my'], $id)){
-                    //call_user_func(array($this->charge,'doCharge'),$data);//alternative way of calling
-                    //$data['increase'] = 0; for discharging
-                    $this->charge->doCharge($data);
+                    $data['increase'] = 1; //for discharging
+                    if($charge = $this->charge->doCharge($data)){
+                        if($arr = $this->updateChargeValue($package['my'], $id, $charge)){
+                            $package['my'] = $arr;
+                        }
+                    }
                 }
             }
             
@@ -239,6 +244,30 @@ class IndexController extends Zend_Controller_Action
         }
         return false;
     }
+    /**
+     * Оновлює дані про заряд для перекладу
+     * @param array $arr
+     * @param Integer $id
+     * @param Float $charge
+     * @return Array
+     * @throws Exception
+     */
+    public function updateChargeValue(Array $arr,$id, $charge)
+    {
+        foreach($arr as $i => $value){
+            if(intval($value['id'] === intval($id))){
+                $arr[$i]['charge'] = $charge;
+                return $arr;
+            }
+        }
+        throw new Exception("translation not found with such id");
+    }
+    /**
+     * Перевіряє чи такий переклад уже міститься в Народному словнику
+     * @param type $onlineTranslation
+     * @param type $result
+     * @return boolean
+     */
     public function checkOnlineTranslationForDuplicates($onlineTranslation, $result){
         if($result){
             foreach($result as $value){
