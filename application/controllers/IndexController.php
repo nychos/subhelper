@@ -16,6 +16,8 @@ class IndexController extends Zend_Controller_Action
     public function init()
     {
         /* Initialize action controller here */
+        $this->user = new Zend_Session_Namespace('user');
+        $this->user->id_user = 1;
         $this->lightning = new Application_Model_Lightnings();
         $this->charge = new Application_Model_Charges();
     }
@@ -54,7 +56,7 @@ class IndexController extends Zend_Controller_Action
          if($this->getRequest()->isXmlHttpRequest()){
              $id = $this->getRequest()->getParam('id');
              $word = $this->getRequest()->getParam('word');
-             $id_user = 1;//TODO: Zend_Session implement
+             $id_user = $this->user->id_user;//TODO: Zend_Session implement
              $translations = new Application_Model_Translations();
              $result = $translations->deleteTranslationConnection($id,$word, $id_user);
              if($result){
@@ -89,11 +91,6 @@ class IndexController extends Zend_Controller_Action
         
          $this->_helper->layout()->disableLayout();
          if($this->getRequest()->isXmlHttpRequest()){
-             //$session = new Zend_Session_Namespace('eventsCoordinator');
-             //var_dump($session->events);die();
-             //var_dump(Custom_Events::getEvents());die();
-             //var_dump(Custom_Events::trigger("user-added-translation"));die();
-             //var_dump(Custom_Events::isRegistered('user-added-translation'));die();
             $data = array();
             $translation = trim($this->getRequest()->getParam('translation'));
             $data['word'] = $this->getRequest()->getParam('word');
@@ -101,7 +98,7 @@ class IndexController extends Zend_Controller_Action
             $referrer = $this->getRequest()->getParam('id_user');
             $useOnlineTranslationFlag = false;
             if(intval($referrer) === 2)$useOnlineTranslationFlag = true;
-            $data['id_user'] = 1; //TODO : from Session
+            $data['id_user'] = $this->user->id_user; //TODO : from Session
             $package = array("id" => $id_translation);//для переміщення слова у власний словник
             ($referrer) ? $package['id_user'] = $referrer : $package['id_user'] = $data['id_user'];
             $translations = new Application_Model_Translations();
@@ -111,7 +108,8 @@ class IndexController extends Zend_Controller_Action
                 //використовуємо переклад
                 if($referrer)$data['referrer'] = $referrer;
                 if($result = $translations->useTranslation($data)){
-                    Custom_Events::trigger("user-added-translation");
+                    $result = Custom_Events::trigger("user-added-translation");
+                    if($result)$data['lightnings'] = $result;
                     $this->message("Successfully used translation", $package);
                 }else {
                     $this->message("Adding translation failed", $result, "error");
@@ -121,8 +119,10 @@ class IndexController extends Zend_Controller_Action
                 if($referrer)$data['referrer'] = $referrer;
                 ($useOnlineTranslationFlag) ? $result = $translations->useOnlineTranslation($data) : $result = $translations->addTranslation($data);
                 if($result){
-                    Custom_Events::trigger("user-added-translation");
-                    $this->message("Successfully added new translation", array("id" => $result, "id_user" => $data['id_user']));
+                    $data = array("id" => $result, "id_user" => $data['id_user']);
+                    $result = Custom_Events::trigger("user-added-translation");
+                    if($result)$data['lightnings'] = $result;
+                    $this->message("Successfully added new translation", $data);
                 }else {
                     $this->message("Translation adding failed", $result, "error");
                 }
@@ -148,7 +148,7 @@ class IndexController extends Zend_Controller_Action
          if($this->getRequest()->isXmlHttpRequest()){
             $translation = trim($this->getRequest()->getParam('translation'));
             $word = $this->getRequest()->getParam('word');
-            $id_user = 1; //TODO : from Session
+            $id_user = $this->user->id_user; //TODO : from Session
             $translations = new Application_Model_Translations();
             $package = array();
             $result = $translations->findTranslations($word, $id_user);
@@ -169,14 +169,15 @@ class IndexController extends Zend_Controller_Action
                     $data['isMatched'] = $isMatched;
                     $package['common'] = $data;
                 }
-            }else {
-            
+            }//else {
+                //TODO: вкл/викл назад підтримку словника
                 $onlineTranslation = $this->findWordInOnlineDictionary($word);
+                //var_dump($onlineTranslation);die();
                 if($onlineTranslation){
                     $isOnlineUnique = $this->checkOnlineTranslationForDuplicates($onlineTranslation, $result);
                     if($isOnlineUnique){
                         $package['online']['translation'] = $onlineTranslation;
-                        $package['online']['id_user'] = 2;//yandex user
+                        $package['online']['id_user'] = 2;//TODO: забрати hardcode yandex user
                         $isMatched = $this->isTranslationCorrect($translation,  $onlineTranslation, "Переклад, знайдений в онлайн словнику, співпав", "Переклад не співпав з тими що містяться в онлайн словнику");
                         $package['online']['isMatched'] = $isMatched;
                         if(isset($package['my'][0]['id_word']))$id_word = $package['my'][0]['id_word'];
@@ -184,7 +185,7 @@ class IndexController extends Zend_Controller_Action
                         if(isset($id_word))$package['online']['id_word'] = $id_word;
                     }
                 }
-            }
+            //}
             /**
              * Формуємо дані для бонусної системи нарахування
              */
@@ -218,12 +219,13 @@ class IndexController extends Zend_Controller_Action
                 if($data = $this->compareMatchedTranslation($package['my'], $id)){
                     $data['increase'] = 1; //for discharging
                     if($charge = $this->charge->doCharge($data)){
-                        if($arr = $this->updateChargeValue($package['my'], $id, $charge)){
-                            $package['my'] = $arr;
-                        }
+                            $package['charge']['word'] = $word;
+                            $package['charge']['charge'] = $charge;
+                            $package['charge']['translation'] = $translation;
                     }
                 }
             }
+            $package['info'] = $info;
             
             if(count($package)){
                 $this->message("Переклади витягнені з ".count($package). " джерел", $package);
@@ -243,24 +245,6 @@ class IndexController extends Zend_Controller_Action
             if(intval($value['id']) === intval($id))return $value;
         }
         return false;
-    }
-    /**
-     * Оновлює дані про заряд для перекладу
-     * @param array $arr
-     * @param Integer $id
-     * @param Float $charge
-     * @return Array
-     * @throws Exception
-     */
-    public function updateChargeValue(Array $arr,$id, $charge)
-    {
-        foreach($arr as $i => $value){
-            if(intval($value['id'] === intval($id))){
-                $arr[$i]['charge'] = $charge;
-                return $arr;
-            }
-        }
-        throw new Exception("translation not found with such id");
     }
     /**
      * Перевіряє чи такий переклад уже міститься в Народному словнику
@@ -433,7 +417,13 @@ class IndexController extends Zend_Controller_Action
              $end = $this->getmicrotime();
              $this->time['method']['breakPhrasesIntoWords']['duration'] = round(($end - $start) * 1000, 3);
              //var_dump($arr);die();
-
+             
+             //5. витягнули блискавки користувача
+             $start = $this->getmicrotime();
+             $lightnings = new Application_Model_Lightnings();
+             $userLightnings = $lightnings->getLightings();
+             $end = $this->getmicrotime();
+             $this->time['db']['getLightnings']['duration'] = round(($end - $start) * 1000, 3);
              //var_dump($dictionary);die();
              $words = $arr['words'];
              $phrases = $arr['phrases'];
@@ -452,7 +442,8 @@ class IndexController extends Zend_Controller_Action
                  'phrases' => $phrases,
                  'wordMap' => $words,
                  'dictionary' => $dictionary,
-                 'timeProcess' => $this->time
+                 'timeProcess' => $this->time,
+                 'lightnings' => $userLightnings
              );
              if(count($row)){
                  $this->message("Subtitle successfully fetched", $data);
@@ -475,11 +466,12 @@ class IndexController extends Zend_Controller_Action
                 $firstLetter = $this->getFirstLowerLetter($word);
                 //здійснити пошук слова у wordMap і добавити звязок
                 $translation = iconv('cp1251', 'utf8', $value['translation']);
+                $charge = $value['charge'];
                 
                 if(isset($newArr[$firstLetter][$word]))
-                    array_push($newArr[$firstLetter][$word],$translation);
+                    array_push($newArr[$firstLetter][$word],array("translation" => $translation, "charge" => $charge));
                 else 
-                    $newArr[$firstLetter][$word] = array($translation);
+                    $newArr[$firstLetter][$word][] = array("translation" => $translation, "charge" => $charge);
             }
             $this->dictionary = $newArr;
             return $newArr;
@@ -537,7 +529,7 @@ class IndexController extends Zend_Controller_Action
                //$destination = $fileInfo['subtitle']['destination'];//папка де міститься завантаження
                //$file = $destination."/".$filename;//повний шлях до файлу
                $data['subtitle'] = '/uploads/'.$filename;
-               $data['id_user'] = 1;//з сесії витягуватимо змінну
+               $data['id_user'] = $this->user->id_user;//з сесії витягуватимо змінну
                 $subtitles = new Application_Model_Subtitles();
                 $response = $subtitles->addSubtitle($data);
                 if($response){

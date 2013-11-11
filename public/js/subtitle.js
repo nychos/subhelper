@@ -4,6 +4,7 @@ function Subtitle(data){
         throw new Error("Data is empty");
     }
     this.data = data;
+    this.sortStatus = "all";
     console.time("extendWordWithClass");
     this.extendWordObjectsWithWordClass();
     console.timeEnd("extendWordWithClass");
@@ -35,6 +36,7 @@ Subtitle.prototype.extendWordObjectsWithWordClass = function(){
  * @returns {undefined}
  */
 Subtitle.prototype.getWord = function(word){
+    if(!word)throw new Error("Word " + word + " not found");
     var firstLetter = this.getFirstLetter(word);
     for(var i in this.data.wordMap){
         if(i === firstLetter){
@@ -46,7 +48,6 @@ Subtitle.prototype.getWord = function(word){
             }
         }
     }
-    throw new Error("Word " + word + " not found");
 };
 /**
  * Витягує Слово по літері на індексу
@@ -70,12 +71,12 @@ Subtitle.prototype.showSimilarPhrases = function(data){
          var sourceLength = data.source.length;
          var length = this.$phrases.length;
          for(var i = 0; i < length; i++){
-             this.$phrases[i].style.display = "none";
+             this.$phrases[i].classList.add("hidePhrase");//.style.display = "none";
              for(var j = 0; j < sourceLength; j++){
                 var index = data.source[j];
                 if(i === index){
                     var phrase = this.$phrases[index];
-                    phrase.style.display = 'block';
+                    phrase.classList.remove("hidePhrase");//.style.display = 'block';
                     var childLength = phrase.children.length;
                     var children = phrase.children;
                     if(this.phraseChildrenWithActiveWords)
@@ -99,7 +100,7 @@ Subtitle.prototype.showAllPhrases = function(){
     this.clearActiveWords();
     var length = this.$phrases.length;
     for(var i = 0; i < length; i++){
-        this.$phrases[i].style.display = "block";
+        this.$phrases[i].classList.remove("hidePhrase");//.style.display = "block";
     }
 };
 Subtitle.prototype.clearActiveWords = function(){
@@ -166,11 +167,10 @@ Subtitle.prototype.sortPhrases = function(type){
     var arr = [];
     for(var i in sortPhrases)arr.push(sortPhrases[i].$phrase);
     var container = document.getElementsByClassName("subtitle")[0];
-    var result = document.getElementById("result");
     var div = container.cloneNode(false);
-    result.removeChild(container);
+    app.phrasesContainer[0].removeChild(container);
     for(var i in arr)div.appendChild(arr[i]);
-    result.appendChild(div);
+    app.phrasesContainer[0].appendChild(div);
 };
 /**
  * Визначаємо параметри (ширину та висоту) для елемента фрази, який є загальним
@@ -190,10 +190,12 @@ Subtitle.prototype.defineContainerValuesForGroupOfSimilarProgressBars = function
     //console.log("cHeight" + ProgressBar.prototype.cHeight);
 };
 Subtitle.prototype.sortByStatus = function(status){
+    if(status)this.sortStatus = status;
+    this.clearActiveWords();
     for(var i in this.data.phrases){
         var phrase = this.data.phrases[i];
-        if(status === "all"){phrase.$phrase.style.display = "block";continue;}
-        (phrase.checkStatus(status)) ? phrase.$phrase.style.display = "block" : phrase.$phrase.style.display = "none";
+        if(this.sortStatus === "all"){phrase.$phrase.classList.remove("hidePhrase")/*.style.display = "block"*/;continue;}
+        (phrase.checkStatus(this.sortStatus)) ? phrase.$phrase.classList.remove("hidePhrase")/*.style.display = "block"*/ : phrase.$phrase.classList.add("hidePhrase")/*.style.display = "none"*/;
     }
 };
 Subtitle.prototype.getPercentOfFinishedPhrases = function(){
@@ -214,10 +216,32 @@ Subtitle.prototype.setPhrasesProgressBar = function(container){
     this.phrasesProgressBar = new ProgressBar(container);
     this.phrasesProgressBar.defineContainerParameters();
     this.phrasesProgressBar.init();
+	
 };
 Subtitle.prototype.triggerPhrasesProgressBar = function(){
     if(!this.phrasesProgressBar instanceof ProgressBar) throw new Error("phrasesProgressBar is not defined!");
     var percent = this.getPercentOfFinishedPhrases();
     console.log(percent);
     this.phrasesProgressBar.setValue(percent);
+};
+Subtitle.prototype.updateLightnings = function(lightnings, callback){
+    var user = storage.get("user")[0];
+    user.lightnings = lightnings;
+    storage.save("user", user);
+    callback.call(this);
+};
+Subtitle.prototype.updateLightningCounter = function(){
+    var lightnings = storage.get("user")[0]["lightnings"];
+    console.log(app.lightningCounter);
+    console.log(lightnings);
+    app.lightningCounter.innerHTML = lightnings;
+};
+/**
+ * Відновлює позицію скрола
+ * @returns {undefined}
+ */
+Subtitle.prototype.restoreScrollPosition = function(){
+    //$(app.contentContainer).animate({scrollTop : scrollPosition});
+    app.contentContainer.scrollTop = app.contentScroll;
+    app.contentScroll = 0;
 };

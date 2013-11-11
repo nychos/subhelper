@@ -6,18 +6,19 @@ Dictionary.prototype.updateDictionary = function(){
 };
 Dictionary.prototype.addTranslation = function(word, translation){
     //1. перевірка чи слово міститься в словнику, якщо так то добавляємо переклад, якщо ні створюємо слово і тоді добавляємо переклад
-    var translationArr = this.getTranslation(word);
+    var translationArr = this.getTranslations(word);
+    var translationObj = {"translation" : translation, "charge" : 0};
     if(translationArr instanceof Array){
         //переклад уже є для даного слова, тому добавляємо в кінець масиву новий переклад
-        translationArr.push(translation);
+        translationArr.push(translationObj);
     }else {
         var firstLetter = app.sub.getFirstLetter(word);
         if(this.dictionary.hasOwnProperty(firstLetter)){
-            this.dictionary[firstLetter][word] = [translation];
+            this.dictionary[firstLetter][word] = [translationObj];
         }else {
             var obj = {};
             Object.defineProperty(obj, word, {
-                value : [translation],
+                value : [translationObj],
                 writable: true,
                 enumerable: true,
                 configurable: true
@@ -52,11 +53,77 @@ Dictionary.prototype.addTranslation = function(word, translation){
  * @param {String} word
  * @returns Array of translations
  */
-Dictionary.prototype.getTranslation = function(word){
+Dictionary.prototype.getTranslations = function(word){
     var firstLetter = app.sub.getFirstLetter(word);
     for(var i in this.dictionary){
         if(firstLetter === i){
             return this.dictionary[i][word];
         }
     }
+    return false;
+};
+Dictionary.prototype.showTranslations = function(word){
+    var arr = this.getTranslations(word);
+    var translations = [];
+    for(var i in arr){
+       translations.push(arr[i].translation);
+    }
+    return translations.join(", ");
+}
+/**
+ * Оновлюємо заряд для перекладу
+ * @param {Array} arr
+ * @returns {Boolean}
+ */
+Dictionary.prototype.updateTranslationCharge = function(arr){
+    //1.знаходимо слово arr.word
+    //2. переклад в якого змінився заряд arr.translation
+    //3. оновлюємо заряд  arr.charge
+    var word = arr.word;
+    var firstLetter = app.sub.getFirstLetter(word);
+    var obj = app.dictionary instanceof Dictionary && app.dictionary.dictionary[firstLetter][word];
+    for(var i in obj){
+       if(obj[i].translation === arr.translation){
+           obj[i].charge = arr.charge;
+           this.updateDictionary();
+           return true;
+       }
+    }
+    throw new Error("translation not found");
+};
+/**
+ * Визначає середнє арифметичне зарядів перекладів
+ * @param {String} word
+ * @returns {Number|Boolean}
+ */
+Dictionary.prototype.getWordCharge = function(word){
+    var arr = [];
+    var sum = 0;
+    if(arr = this.getTranslations(word)){
+        for(var i in arr){
+            sum += arr[i].charge;
+        }
+        return sum / arr.length;
+    }else {
+        return false;
+    }
+};
+Dictionary.prototype.getFullDictionaryCharge = function(){
+    var sum = 0;
+    var counter = 0;
+    for(var i in this.dictionary){
+       var letter = this.dictionary[i];
+       for(var j in letter){
+           var word = letter[j];
+           for(var k in word){
+               ++counter;
+               if(word[k].charge){
+                   sum += word[k].charge;
+               }
+           }
+       }
+    }
+    var full = counter * 10;
+    var percent = (sum * 100 / full) + "%";
+    return {"sum" : sum, "count" : counter, "full" : full, percent : percent};
 };

@@ -12,20 +12,20 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
     {
         if($word){
             $word = strtolower($word);
-            $id_user = 1;
+            $id_user = $_SESSION['user']['id_user'];
             $query = $this->getAdapter()->query("
                 SELECT DISTINCT `t`.*, `ut`.`id_user` AS `tuser`,
                 IF(t.charge IS NULL, ut.charge, t.charge) as charge,
                 IF(ut.id_translation IS NULL, 't', 'ut') as location 
                 FROM `translations` AS `t`
                 LEFT JOIN `users_translations` AS `ut` ON t.id=ut.id_translation
-                INNER JOIN `words` ON words.id=ut.id_word OR words.id=t.id_word WHERE (word = ?) AND (ut.id_user = 1 OR NOT EXISTS (
+                INNER JOIN `words` ON words.id=ut.id_word OR words.id=t.id_word WHERE (word = '{$word}') AND (ut.id_user = {$id_user} OR NOT EXISTS (
                         SELECT b.id_user as tuser FROM translations as t2
                         LEFT JOIN `users_translations` AS `b` ON t2.id=b.id_translation
                         INNER JOIN `words` ON words.id=b.id_word OR words.id=t2.id_word
-                        WHERE b.id_user = ?
+                        WHERE b.id_user = {$id_user}
                         AND b.id_translation = ut.id_translation
-                        )) ORDER BY `t`.`translation` ASC", array($word, $id_user));
+                        )) ORDER BY `t`.`translation` ASC"/*, array($word, $id_user, $id_user)*/);
               
             /*$select = $this->_db->select("t.*")
                 ->distinct()
@@ -82,24 +82,35 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
      */
     public function getUserTranslations()
     {
-        $id_user = 1;//TODO: from SESSION
+        $id_user = $_SESSION['user']['id_user'];//TODO: from SESSION
         $db = $this->getAdapter();
-         $select = $this->_db->select()
-                ->distinct()
-                ->from(array("t" => "translations"), array("t.translation"))
-                ->joinLeft(array('ut' => "users_translations"),'t.id=ut.id_translation', array())
-                ->joinInner("words", 'words.id=ut.id_word OR words.id=t.id_word', array("word"))
-                ->where("ut.id_user = ? OR NOT EXISTS (
-                        SELECT b.id_user as tuser FROM translations as t2
-                        LEFT JOIN `users_translations` AS `b` ON t2.id=b.id_translation
-                        INNER JOIN `words` ON words.id=b.id_word OR words.id=t2.id_word
-                        WHERE b.id_user = ?
-                        AND b.id_translation = ut.id_translation
-                        )"
-                , $id_user)
-                ->order('t.translation ASC');
         
-        $result = $db->fetchAll($select);
+        $query = " SELECT DISTINCT `t`.`translation`, `words`.`word`, 
+            IF(t.charge IS NULL, ut.charge, t.charge) as 'charge',
+            IF(ut.id_translation IS NULL, 't', 'ut') as location,
+            IF(ut.id_user IS NULL, t.id_user, ut.id_user) as id_user 
+            FROM `translations` AS `t`
+            LEFT JOIN `users_translations` AS `ut` ON t.id=ut.id_translation
+            INNER JOIN `words` ON words.id=ut.id_word OR words.id=t.id_word
+            WHERE  (ut.id_user = 1 OR NOT EXISTS ( SELECT b.id_user as tuser FROM translations as t2 LEFT JOIN `users_translations` AS `b` ON t2.id=b.id_translation INNER JOIN `words` ON words.id=b.id_word OR words.id=t2.id_word WHERE b.id_user = 1 AND b.id_translation = ut.id_translation))
+            ORDER BY `t`.`translation` ASC";
+//         $select = $this->_db->select()
+//                ->distinct()
+//                ->from(array("t" => "translations"), array("t.translation"))
+//                ->joinLeft(array('ut' => "users_translations"),'t.id=ut.id_translation', array())
+//                ->joinInner("words", 'words.id=ut.id_word OR words.id=t.id_word', array("word"))
+//                ->where("ut.id_user = ? OR NOT EXISTS (
+//                        SELECT b.id_user as tuser FROM translations as t2
+//                        LEFT JOIN `users_translations` AS `b` ON t2.id=b.id_translation
+//                        INNER JOIN `words` ON words.id=b.id_word OR words.id=t2.id_word
+//                        WHERE b.id_user = ?
+//                        AND b.id_translation = ut.id_translation
+//                        )"
+//                , $id_user)
+//                ->order('t.translation ASC');
+        
+        $result = $db->fetchAll($query);
+        //var_dump($result);die();
         //$str = $select->__toString();var_dump($str);die();
         if(count($result))return $result;
         return false;
@@ -107,7 +118,7 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
     public function findUserTranslation($word)
     {
         if($word){
-            $id_user = 1;//TODO: fetch user id from SESSION
+            $id_user = $_SESSION['user']['id_user'];//TODO: fetch user id from SESSION
             $select = $this->_db->select("*")
                         ->from(array("t" => "translations"))
                         ->distinct()

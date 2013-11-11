@@ -10,7 +10,7 @@ class Application_Model_Charges extends Zend_Db_Table_Abstract{
 
     public function init()
     {
-        $this->id_user = 1; //TODO: from Session
+        $this->id_user = $_SESSION['user']['id_user']; //TODO: from Session
         $this->dbAdapter = $this->getAdapter();
         $this->defineChargeItem();
     }
@@ -99,26 +99,4 @@ class Application_Model_Charges extends Zend_Db_Table_Abstract{
             }
        }else {throw new Exception("getChargeState didn't return value!");}
     }
-    /**
-     * TODO: перенести на клієнт
-     * Витягує інформацію про заряд для перекладу
-     * @param  $id_translation
-     * @param String $table
-     * @return Array
-     */
-//    public function getChargeInfo($id_translation, $table, $id_word)
-//    {
-//        list($table, $where) = $this->getTableConditions($table, $id_translation, $id_word);
-//        $query = $this->dbAdapter->select()->from($table)->where($where);
-//        $result = $this->dbAdapter->fetchRow($query);
-//        return $result;
-//    }
-//    /**
-//     * //TODO: витягувати при формуванні словника користувача
-//     * Заряд словника користувача
-//     * @return Array масив з даними про заряд словника
-//     */
-//    public function getDictionaryCharge()
-//    {
-//    }
 }

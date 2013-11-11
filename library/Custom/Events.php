@@ -36,6 +36,7 @@ class Custom_Events{
            if($result)self::clear($event);
            return $result;
        }
+       return false;
        //throw new Exception("no such event atached!");
     }
     /**
