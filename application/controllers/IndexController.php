@@ -17,7 +17,7 @@ class IndexController extends Zend_Controller_Action
     {
         /* Initialize action controller here */
         $this->user = new Zend_Session_Namespace('user');
-        $this->user->id_user = 1;
+        $this->user->id_user = 3;
         $this->lightning = new Application_Model_Lightnings();
         $this->charge = new Application_Model_Charges();
     }
@@ -119,7 +119,7 @@ class IndexController extends Zend_Controller_Action
                 if($referrer)$data['referrer'] = $referrer;
                 ($useOnlineTranslationFlag) ? $result = $translations->useOnlineTranslation($data) : $result = $translations->addTranslation($data);
                 if($result){
-                    $data = array("id" => $result, "id_user" => $data['id_user']);
+                    $data = array("id" => $result, "id_user" => $data['id_user'], "word" => $data['word'], "translation" => $translation);
                     $result = Custom_Events::trigger("user-added-translation");
                     if($result)$data['lightnings'] = $result;
                     $this->message("Successfully added new translation", $data);
