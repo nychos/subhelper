@@ -151,6 +151,7 @@ class IndexController extends Zend_Controller_Action
             $id_user = $this->user->id_user; //TODO : from Session
             $translations = new Application_Model_Translations();
             $package = array();
+            //TODO: некоректний запит до бази
             $result = $translations->findTranslations($word, $id_user);
             //якщо знайдено у власному словнику або загальному, в інакшому випадку шукаємо в онлайн словнику
             if($result){
@@ -217,7 +218,7 @@ class IndexController extends Zend_Controller_Action
             }else if($info['myMatch']){
                 $id = $package['my']['isMatched']['match'];
                 if($data = $this->compareMatchedTranslation($package['my'], $id)){
-                    $data['increase'] = 1; //for discharging
+                    $data['increase'] = 1; //for discharging -1
                     if($charge = $this->charge->doCharge($data)){
                             $package['charge']['word'] = $word;
                             $package['charge']['charge'] = $charge;

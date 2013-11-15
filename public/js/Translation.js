@@ -10,6 +10,7 @@ function Translation(options){
     this.content = options.content;
     this.dictionaryClass = '.dictionaryBody';
     console.log(options);
+    this.init();
 };
 Translation.prototype.init = function(){
     this.$my = this.content.find('#myDictionary');
@@ -19,10 +20,8 @@ Translation.prototype.init = function(){
     this.$online = this.content.find('#onlineDictionary');
     this.$onlineBody = this.$online.find(this.dictionaryClass);
     this.$header = this.content.find("#translationCheckHeader");
-    
-    var myMatch = this.data.my && this.data.my.isMatched.match;
-    console.log(myMatch);
-    if(!myMatch){
+    //можливість добавлення власного перекладу
+    if(!(this.data.my && this.data.my.isMatched.match)){
         var button = this.createTranslationAddButton(); // створив кнопку
         
         var mouseenter = function(){
@@ -37,49 +36,41 @@ Translation.prototype.init = function(){
         this.$header.off('mouseleaeve').on('mouseleave', mouseleave);
     }
 };
-Translation.prototype.addUserTranslationEvent = function(event, callback){
-    var self = this;
-    var send = function(){
+/**
+ * Опрацьовує кліки по перекладам різних словників
+ * @param {String} event
+ * @param {Function} callback
+ */
+Translation.prototype.addTranslationEvent = function(event, callback){
+     var self = this;
+     var useOwnTranslation = function(){
         var package = {word: self.word, translation: self.translation};
         self.removeUserTranslationPossibility();
         callback(package);
-    };
-    
-    this.translationAddButton.off(event).on(event, send);
-    this.$header.off(event).on(event, send);
-};
-/**
- * Привязує подію до кнопок з перекладом
- * @param {String} event
- * @param {Function} callback
- * @returns {undefined}
- */
-Translation.prototype.addDictionaryButtonEvent = function(event, callback){
-    var self = this;
-    var make = function(){
+     };
+      var useOtherTranslation = function(){
        var $this = $(this), package = {};
        if($this.data('id-user'))package.id_user = $this.data('id-user'); // реферер
        if($this.data('id'))package.id = $this.data('id'); //якщо Народний Словник
        package.word = self.word; 
        package.translation = $this.text(); //переклад
        package.$this = $this;
-       self.usedTranslation = package;//містить всю інформацію про вибраний переклад,
-       console.log(self.usedTranslation);
+       self.usedTranslation = $.extend({}, package);//містить всю інформацію про вибраний переклад,
        delete package.$this;
-       console.log(self.usedTranslation);
        callback(package);
     };
-    //make();
-    console.time("commonBody");
-    this.$commonBody.find('button').on(event, make);
-    console.timeEnd("commonBody");
-    console.time("onlineBody");
-    this.$onlineBody.find('button').on(event, make);
-    console.timeEnd("onlineBody");
+   
+    this.$commonBody.find('button').on(event, useOtherTranslation);
+    this.$onlineBody.find('button').on(event, useOtherTranslation);
+    
+    if(app.translate.translationAddButton instanceof jQuery){
+        this.translationAddButton.off(event).on(event, useOwnTranslation);
+        this.$header.off(event).on(event, useOwnTranslation);
+    }
 };
 Translation.prototype.moveTranslation = function(content){
     //1. перемістили переклад у власний словник
-    this.$myBody.append(content); 
+    this.$myBody.append(content);
     //2. пошук на співпадіння
     this.checkMatch();
 };
@@ -102,8 +93,10 @@ Translation.prototype.checkMatch = function(){
     if(this.usedTranslation && this.usedTranslation.translation){
         console.log("usedTranslation");
         console.log(this.usedTranslation.$this);
-        if(this.usedTranslation.translation === this.translation)
-            this.hide(this.usedTranslation.$this);
+        if(this.usedTranslation.translation === this.translation){
+            this.removeUserTranslationPossibility();
+        }
+        this.hide(this.usedTranslation.$this);
     }else {
         console.log("my own translation used");
         this.removeSimilarTranslations(); // <= видаляє співпалі переклади з інших словників
@@ -117,6 +110,7 @@ Translation.prototype.checkMatch = function(){
 Translation.prototype.removeUserTranslationPossibility = function(){
     if(this.translationAddButton instanceof jQuery){
         this.translationAddButton.remove();
+        this.$header.off();
         delete this.translationAddButton;
     }
 };
@@ -133,6 +127,7 @@ Translation.prototype.removeSimilarTranslations = function(){
             console.log("button text: " + translation);
             console.log("self translation: " + self.translation);
             if(translation === self.translation){
+                self.removeUserTranslationPossibility();
                 self.hide($this);
                 console.log("successfully removed");
                 return false;

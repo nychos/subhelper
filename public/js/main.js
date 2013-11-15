@@ -32,7 +32,7 @@
                        $('#shadow').hide();
                     });
                 });
-                 /**
+               /**
                 * Показує імя фільтра з кнопкою закриття
                 */
                this.bind('show-filter', function(e,data){
@@ -53,13 +53,15 @@
                /**
                 * Відображає діалогове меню для слова
                 */
-               this.bind('show-word-dialog', function(e, data){
+               this.bind('find-translation', function(e, data){
                    $('.word-dialog').remove();//видаляємо поперднє діалогове вікно
                    var $this = this;
                    this.render('templates/word-dialog.tmpl', {data : data}).prependTo(app.phrasesContainer).then(function(content){
                        var wordDialog = $('.word-dialog');
                        $(document).off('click').on('click', function(e){
-                            if ($(e.target).closest(wordDialog).length) return;//якщо клік відноситься до діалогового вікна пропускаємо
+                           console.log(e.target);
+                            if ($(e.target).closest($('.word-dialog')).length) return;//якщо клік відноситься до діалогового вікна пропускаємо
+                            console.log("closing word-dialog");
                             wordDialog.remove();//в інакшому випадку видаляємо його
                        });
                        wordDialog.css({left : data.coords.left, top: data.coords.top + 20});
@@ -82,19 +84,12 @@
                                         wordDialog.empty();
                                         console.log("translation:" + translation + " word: " + word);
                                         $this.render('templates/translation-check-dialog.tmpl', {data : obj.data, word : word, translation : translation}).prependTo(wordDialog).then(function(content){
-                                              //here I am
-                                              app.translate = new Translation({translation: translation, word: word, data: obj.data, content : $('#translationCheckDialog')});
-                                              app.translate.init();
-                                              app.translate.addDictionaryButtonEvent('click', function(data){
-                                                  app.trigger('add-translation', data);
-                                                  console.log(data);
-                                              });
-                                              if(app.translate.translationAddButton){
-                                                    app.translate.addUserTranslationEvent('click', function(data){
-                                                        app.trigger('add-translation', data);
-                                                        console.log(data);
-                                                    });
-                                              }
+                                            //here I am
+                                            app.translate = new Translation({translation: translation, word: word, data: obj.data, content : $('#translationCheckDialog')});
+
+                                            app.translate.addTranslationEvent('click', function(data){
+                                                app.trigger('add-translation', data);
+                                            });
                                         });
                                     }else if(obj.status === "error"){
                                        //console.log(obj.message);
@@ -131,7 +126,6 @@
                });
                 /**
                  * Показує фрази зі субтитрів
-                 * @type Arguments
                  */
                 this.bind('show-phrases', function(e, data){
                  //перевіряємо локальне сховище 
@@ -233,12 +227,12 @@
                           app.contentScroll = $(this).position().top;
                           console.log(app.contentScroll);
                          //відображення діалогового вікна для слова
-                         app.trigger('show-word-dialog', {word : word, source : source, count : countPhrases, coords : $this.position()});
+                         app.trigger('find-translation', {word : word, source : source, count : countPhrases, coords : $this.position()});
                      }); 
                 });
                 /*добавлення перекладу*/
                 this.bind('add-translation', function(e, data){
-                    console.log(data);
+                    //console.log(data);
                     $.ajax({
                        url : 'index/add-translation',
                        type : 'post',
@@ -270,7 +264,7 @@
                        data : {id : data.id, word : data.word},
                        type : 'post',
                        success : function(response){
-                           //console.log(response);
+                           console.log(response);
                            app.trigger('translation-replace', data);
                            //app.trigger('remove-word-from-dictionary');//TODO:видалити переклад з локального словника
                        }
@@ -281,17 +275,12 @@
                  */
                 this.bind('translation-replace', function(e,data){
                     console.log(data);
-//                    var obj = {};
-//                    if(data.id)obj.id = data.id;
-//                    if(data.id_user)obj.id_user = data.id_user;
-                   
                     //генеруємо кнопку з даними і вставляємо її до решти власних перекладів
                     this.render('templates/translation-item.tmpl', data).then(function(content){
-                       app.translate.moveTranslation(content);
                         //1. перемістили запозичене слово
                         //2. видалили оригінал
                         //3.перевірити на співпадіння в Загальному або Онлайн словнику
-                        
+                       app.translate.moveTranslation(content); 
                     }); 
                 });
                 this.bind('translation-moving', function(e, data){

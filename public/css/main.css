@@ -50,7 +50,14 @@ input.inputSubmit {display:none;}
     position: relative;
 }
 .close_filter img {border: 1px solid #ccc;}
-.word-dialog {border: 1px solid #91BE3F; position: absolute;background-color: whitesmoke; width: 300px;}
+.word-dialog {
+    background-color: whitesmoke;
+    border: 1px outset whitesmoke;
+    border-radius: 5px 5px 5px 5px;
+    padding: 10px;
+    position: absolute;
+    width: 300px;
+}
 #translationCheckDialog {position: absolute;z-index: 2; border: 1px double #fff;
 width: 600px;
 background-color: whitesmoke;
@@ -63,7 +70,7 @@ background-color: whitesmoke;
 .dictionaryBody button { border-radius: 5px; padding: 5px;}
 #myDictionary button:hover {background-color: #f44040; font-weight: bold; color: #fff;}
 #commonDictionary button:hover {background-color: #92c81f; font-weight: bold; color: #fff;}
-.phrase span {
+.phrase span, .niceButton {
     background-color: whitesmoke;
     border: 1px outset whitesmoke;
     border-radius: 5px 5px 5px 5px;
@@ -217,3 +224,18 @@ background-color: whitesmoke;
     font-size: "9px";
 }
 .hidePhrase {display: none;}
+
+#showWordPhrases {
+    width: 100%;
+    line-height: 1em;
+}
+.word-dialog input {
+    float: right;
+    margin-top: 5px;
+    position: relative;
+}
+.word-dialog input[type=text] {
+    height: 25px;
+    width: 100%;
+}
+#showTranslation {display: none;}

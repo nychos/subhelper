@@ -2,7 +2,7 @@
 
 class Application_Model_Translations extends Zend_Db_Table_Abstract{
     /**
-     * 
+     * TODO: переписати нормально SQL запит, без дублювання!
      * Шукає слово та переклад до нього у власному словнику
      * @param String $word
      * @param Integer $id_user
@@ -14,9 +14,9 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
             $word = strtolower($word);
             $id_user = $_SESSION['user']['id_user'];
             $query = $this->getAdapter()->query("
-                SELECT DISTINCT `t`.*, `ut`.`id_user` AS `tuser`,
-                IF(t.charge IS NULL, ut.charge, t.charge) as charge,
-                IF(ut.id_translation IS NULL, 't', 'ut') as location 
+                SELECT DISTINCT `t`.*, `ut`.`id_user` AS `tuser`, words.id as word_id,
+                IF(t.id_user = {$id_user}, t.charge, ut.charge) as right_charge,
+                IF(t.id_user = {$id_user}, 't', 'ut') as location 
                 FROM `translations` AS `t`
                 LEFT JOIN `users_translations` AS `ut` ON t.id=ut.id_translation
                 INNER JOIN `words` ON words.id=ut.id_word OR words.id=t.id_word WHERE (word = '{$word}') AND (ut.id_user = {$id_user} OR NOT EXISTS (
@@ -66,10 +66,10 @@ class Application_Model_Translations extends Zend_Db_Table_Abstract{
                     }
                         $arr[$dictionary][$i]['id'] = $value['id'];
                         $arr[$dictionary][$i]['translation'] =  trim(iconv('cp1251', 'utf8',$value['translation']));
-                        $arr[$dictionary][$i]['id_word'] = $value['id_word'];
+                        $arr[$dictionary][$i]['id_word'] = $value['word_id'];
                         $arr[$dictionary][$i]['added'] = $value['added'];
                         $arr[$dictionary][$i]['location'] = $value['location'];
-                        $arr[$dictionary][$i]['charge'] = $value['charge'];
+                        $arr[$dictionary][$i]['charge'] = $value['right_charge'];
                 }
                 return $arr;
             }

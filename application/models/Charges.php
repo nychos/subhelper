@@ -34,6 +34,8 @@ class Application_Model_Charges extends Zend_Db_Table_Abstract{
          * 
          */
         $select = $this->dbAdapter->select("charge")->from($arr['table'])->where($arr['where']);
+         $str = $select->__toString();
+         //var_dump($str);die();
         if($row = $this->dbAdapter->fetchRow($select)){
             $charge = floatval($row['charge']);
             if($arr['increase']){
