@@ -57,12 +57,26 @@ input.inputSubmit {display:none;}
     padding: 10px;
     position: absolute;
     width: 300px;
+    opacity: 0;
 }
-#translationCheckDialog {position: absolute;z-index: 2; border: 1px double #fff;
-width: 600px;
+#translationCheckDialog {position: relative;z-index: 3;
+width: auto;
 background-color: whitesmoke;
 }
-#translationCheckHeader {font-size: 1.5em; color: #000; border: 1px outset whitesmoke; border-radius: 5px;margin: 2px; padding: 2px;}
+#translationCheckHeader {
+    line-height: 2em;
+    font-size: 1em;
+    color: #000;
+    border: 1px outset whitesmoke;
+    border-radius: 5px;
+    margin: 2px;
+    padding: 2px;
+    background: linear-gradient(to top, #C6C6C6, #FFFFFF) repeat scroll 0 0 transparent;
+}
+.dictionaryType {
+    border: 1px solid #CCCCCC;
+    margin-top: 2px;
+}
 #translationCheckBody {color: #000;}
 .translationMessage {font-size: 10px; clear: both;}
 .addTranslation {border: 1px dotted #444444; padding: 5px;}

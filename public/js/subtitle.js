@@ -5,9 +5,9 @@ function Subtitle(data){
     }
     this.data = data;
     this.sortStatus = "all";
-    console.time("extendWordWithClass");
+   //console.time("extendWordWithClass");
     this.extendWordObjectsWithWordClass();
-    console.timeEnd("extendWordWithClass");
+   //console.timeEnd("extendWordWithClass");
 };
 /**
  * Встановлюємо фрази
@@ -104,7 +104,7 @@ Subtitle.prototype.showAllPhrases = function(){
     }
 };
 Subtitle.prototype.clearActiveWords = function(){
-    console.time("clearActiveWords");
+   //console.time("clearActiveWords");
     if(this.phraseChildrenWithActiveWords){
         var length = this.phraseChildrenWithActiveWords.length;
         for(var i = 0; i < length; i++){
@@ -116,7 +116,7 @@ Subtitle.prototype.clearActiveWords = function(){
         }
         this.phraseChildrenWithActiveWords.length = 0;
     }
-    console.timeEnd("clearActiveWords");
+   //console.timeEnd("clearActiveWords");
 };
 Subtitle.prototype.getFirstLetter = function(word){
     return word[0].toLowerCase();
@@ -128,9 +128,9 @@ Subtitle.prototype.extendPhraseObjectsWithPhraseAction = function(callback){
         this.data.phrases[i].__proto__ =  this.phraseObject;
         this.data.phrases[i].$phrase = this.addStatusContainerToPhrase(this.$phrases[i]);
         if(i == 0){
-            console.time("defineValuesForGroupOfSimilarProgressBars");
+           //console.time("defineValuesForGroupOfSimilarProgressBars");
             this.defineContainerValuesForGroupOfSimilarProgressBars();
-            console.timeEnd("defineValuesForGroupOfSimilarProgressBars");
+           //console.timeEnd("defineValuesForGroupOfSimilarProgressBars");
         }
         this.data.phrases[i].index = i;
         this.data.phrases[i].init();
@@ -144,7 +144,7 @@ Subtitle.prototype.addStatusContainerToPhrase = function($elem){
              $elem.insertBefore(div, $elem.firstChild);
              return $elem;
         }catch(e){
-            console.warn(e);
+           //console.warn(e);
         }
 };
 Subtitle.prototype.getPhrase = function(id){
@@ -221,7 +221,7 @@ Subtitle.prototype.setPhrasesProgressBar = function(container){
 Subtitle.prototype.triggerPhrasesProgressBar = function(){
     if(!this.phrasesProgressBar instanceof ProgressBar) throw new Error("phrasesProgressBar is not defined!");
     var percent = this.getPercentOfFinishedPhrases();
-    console.log(percent);
+   //console.log(percent);
     this.phrasesProgressBar.setValue(percent);
 };
 Subtitle.prototype.updateLightnings = function(lightnings, callback){
@@ -232,8 +232,8 @@ Subtitle.prototype.updateLightnings = function(lightnings, callback){
 };
 Subtitle.prototype.updateLightningCounter = function(){
     var lightnings = storage.get("user")[0]["lightnings"];
-    console.log(app.lightningCounter);
-    console.log(lightnings);
+   //console.log(app.lightningCounter);
+   //console.log(lightnings);
     app.lightningCounter.innerHTML = lightnings;
 };
 /**

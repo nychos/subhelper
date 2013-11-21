@@ -37,6 +37,23 @@ Translation.prototype.init = function(){
     }
 };
 /**
+ * Видаляє переклад з власного словнику, а точніше відкріплює використаний
+ * @param {String} event
+ * @param {Function} callback
+ */
+Translation.prototype.removeTranslationEvent = function(event, callback){
+    var self = this;
+    this.$myBody.find('button').off(event).on(event, function(){
+       var $this = $(this);
+       var package = {
+           id: $this.data('id'),
+           word:  self.word,
+           $this: $this
+        };
+        callback(package);
+    });
+};
+/**
  * Опрацьовує кліки по перекладам різних словників
  * @param {String} event
  * @param {Function} callback
@@ -59,7 +76,7 @@ Translation.prototype.addTranslationEvent = function(event, callback){
        delete package.$this;
        callback(package);
     };
-   
+    
     this.$commonBody.find('button').on(event, useOtherTranslation);
     this.$onlineBody.find('button').on(event, useOtherTranslation);
     

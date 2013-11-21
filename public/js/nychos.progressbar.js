@@ -33,8 +33,8 @@ ProgressBar.prototype.getProgressHeight = function(){
 ProgressBar.prototype.setProgressWidth = function(value){
     this.pWidth = Math.ceil(value);
     this.pHeight = this.cHeight;
-    console.log("pwidth: "+ value);
-    console.log("cHeight: " + this.cHeight);
+   //console.log("pwidth: "+ value);
+   //console.log("cHeight: " + this.cHeight);
 };
 ProgressBar.prototype.setProgressHeight = function(value){
     this.pHeight = Math.ceil(value);
@@ -105,8 +105,8 @@ ProgressBar.prototype.init = function(){
 ProgressBar.prototype.defineContainerParameters = function(){
     this.cWidth = this.getInnerValue(this.container, 0);
     this.cHeight = this.getInnerValue(this.container, 1);
-    console.log("width: " + this.cWidth);
-    console.log("height: " + this.cHeight);
+   //console.log("width: " + this.cWidth);
+   //console.log("height: " + this.cHeight);
 };
 /**
  * 
@@ -145,15 +145,18 @@ ProgressBar.prototype.createTextContainer = function(){
     div.style.position = "absolute";
     div.style.zIndex = 2;
     div.style.fontSize = "9px";
-    div.innerHTML = this.getCurrentValue() + "%";
+    //div.innerHTML = this.getCurrentValue() + "%";
     this.container.appendChild(div);
     this.textContainer = div;
+    this.setTextValue();
     //відцентрувати відносно контейнера
     this.center(div);
 };
 //TODO: протестувати
 ProgressBar.prototype.setTextValue = function(value){
     if(this.textContainer instanceof HTMLElement){
+        var value = value || this.getCurrentValue();
+        value += "%";
         this.textContainer.innerHTML = value;
     }else {throw new Error("text container is undefined");}
 };
@@ -170,8 +173,8 @@ ProgressBar.prototype.getCurrentValue = function(){
     if (this.currentValue != null) return this.currentValue;
     var progressVal = this.getProgressValue();
     var containerVal = this.getContainerValue();
-    console.log("pVal: " + progressVal);
-    console.log("cVal: " + containerVal);
+   //console.log("pVal: " + progressVal);
+   //console.log("cVal: " + containerVal);
     this.currentValue = (this.getProgressValue() * 100) / this.getContainerValue();
     return this.currentValue;
 };
@@ -188,7 +191,10 @@ ProgressBar.prototype.setValue = function(value){
     //визначаємо поточне значення
     this.currentValue = value;
     //перевіряємо чи існує текстовий контейнер
-    if (!this.textContainer)this.createTextContainer();
+    if (!this.textContainer)
+        this.createTextContainer();
+    else 
+        this.setTextValue();
 };
 ProgressBar.prototype.destroy = function(){
     this.container.removeChild(this.progressContainer);

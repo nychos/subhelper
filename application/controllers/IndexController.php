@@ -172,7 +172,8 @@ class IndexController extends Zend_Controller_Action
                 }
             }//else {
                 //TODO: вкл/викл назад підтримку словника
-                $onlineTranslation = $this->findWordInOnlineDictionary($word);
+                $onlineTranslation = $this->findWordInOnlineDictionary($word);;
+                
                 //var_dump($onlineTranslation);die();
                 if($onlineTranslation){
                     $isOnlineUnique = $this->checkOnlineTranslationForDuplicates($onlineTranslation, $result);
@@ -287,8 +288,12 @@ class IndexController extends Zend_Controller_Action
     {
         $newPhrases = array();
         foreach($phrases as $index => $phrase){
-            if(isset($phrase['phrase']))$phrase = $phrase['phrase'];
+            if(isset($phrase['phrase'])){
+                $id = $phrase['id'];
+                $phrase = $phrase['phrase'];
+            }
             $newPhrases[$index]['phrase'] = $this->wrapWordsInPhrase($phrase);//обгортає слова в фразі
+            $newPhrases[$index]['id'] = $id;
             preg_match_all($this->_wordPattern, $phrase, $words, PREG_OFFSET_CAPTURE);//пошук підстроки
 
             //проходиться по всім словам у фразі
@@ -402,6 +407,7 @@ class IndexController extends Zend_Controller_Action
                 $this->time['db']['addPhrases']['duration'] = round(($end - $start) * 1000, 3);
                 
                 if(!$addPhrases)$this->message("Помилка при добавленні фраз", false, "error");
+                $phrases = $phrase->getPhrases($id);//витягуємо ще раз
              }
              
              //3. витягнули користувацький словник
@@ -418,7 +424,6 @@ class IndexController extends Zend_Controller_Action
              $end = $this->getmicrotime();
              $this->time['method']['breakPhrasesIntoWords']['duration'] = round(($end - $start) * 1000, 3);
              //var_dump($arr);die();
-             
              //5. витягнули блискавки користувача
              $start = $this->getmicrotime();
              $lightnings = new Application_Model_Lightnings();
