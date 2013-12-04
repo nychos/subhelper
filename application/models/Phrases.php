@@ -11,7 +11,8 @@ class Application_Model_Phrases extends Zend_Db_Table_Abstract{
     public function updatePhraseStatus($arr)
     {
         $id_user = $_SESSION['user']['id_user'];
-        //$arr[0]['id'] - ідентифікатор фрази
+        $db = $this->getAdapter();
+        //$arr[0]['id_phrase'] - ідентифікатор фрази
         //$arr[0]['status'] - змінений стан фрази
         //***************************************
         // 1. Перевірка наявності стану фрази

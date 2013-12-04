@@ -131,7 +131,8 @@ class IndexController extends Zend_Controller_Action
     }
     //перевіряє чи переклад співпав з тим що в користувацькій базі
     public function isTranslationCorrect($translation, $wordData, $matchedMessage, $notMatchedMessage){
-         $isMatched = $this->checkTranslation($translation, $wordData);
+         $isMatched = $this->checkTranslation($translation, $wordData);;
+         
          if($isMatched){
              return array('match' => $isMatched, 'message' => $matchedMessage);
          }else {

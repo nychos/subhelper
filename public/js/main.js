@@ -315,14 +315,8 @@
                  * Добавлення перекладу в локальний словник
                  */
                this.bind('add-translation-to-dictionary', function(e, data){
-                    //console.log(data);
-                    //викликати dictionary API для добавлення перекладу для вказаного слова
-                   //console.time("addTranslation");
                     var result = app.dictionary.addTranslation(data.word, data.translation);
-                   //console.timeEnd("addTranslation");
                     if(result){
-                       //console.info("Translation successfully added");
-                        //if(!confirm("Continue translation?"))$('.word-dialog').remove();
                         app.sub.triggerPhrasesProgressBar();
                     }
                 });

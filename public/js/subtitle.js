@@ -198,16 +198,36 @@ Subtitle.prototype.sortByStatus = function(status){
         (phrase.checkStatus(this.sortStatus)) ? phrase.$phrase.classList.remove("hidePhrase")/*.style.display = "block"*/ : phrase.$phrase.classList.add("hidePhrase")/*.style.display = "none"*/;
     }
 };
+Subtitle.prototype.getPercent = function(number, total)
+{
+  if(!isNaN(number) && !isNaN(total)){
+    return number * 100 / total;
+  }else{
+      throw new Error("MUST be only numbers");
+  }
+};
 Subtitle.prototype.getPercentOfFinishedPhrases = function(){
     var phrases = this.data.phrases;
-    var waiting = 0;
+    var waiting = [], done = [];
     var total = phrases.length;
     for(var i in phrases){
-        if(phrases[i].status === 1)++waiting;
+        if(phrases[i].status === 1)waiting.push(phrases[i].id);
+        if(phrases[i].status === 2)done.push(phrases[i].id);
     }
-    var percent = waiting *  100 / total;
+    var waitingPercent = this.getPercent(waiting.length, total);//waiting *  100 / total;
+    var donePercent = this.getPercent(done.length, total);
+    
     //var obj = {waiting: waiting, total : total, process : process};
-    return percent;
+    return {
+        waiting: {
+            percent: waitingPercent,
+            indexes: waiting
+        },
+        done: {
+            percent: donePercent,
+            indexes: done
+        }
+    };
 };
 /*
  * Встановлюємо загальний прогрес бар 
@@ -221,8 +241,8 @@ Subtitle.prototype.setPhrasesProgressBar = function(container){
 Subtitle.prototype.triggerPhrasesProgressBar = function(){
     if(!this.phrasesProgressBar instanceof ProgressBar) throw new Error("phrasesProgressBar is not defined!");
     var percent = this.getPercentOfFinishedPhrases();
-   //console.log(percent);
-    this.phrasesProgressBar.setValue(percent);
+    console.log(percent);
+    this.phrasesProgressBar.setValue(percent.waiting.percent);
 };
 Subtitle.prototype.updateLightnings = function(lightnings, callback){
     var user = storage.get("user")[0];
