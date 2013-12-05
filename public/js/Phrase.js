@@ -79,11 +79,12 @@ Phrase.prototype.getTranslatedPercent = function(){
 Phrase.prototype.defineStatus = function(approval){
     /**
      * Дивимся в якому поточному стані фраза: 
-     * status process може змінитиьс на waiting тільки різницею загальних слів до перекладених
+     * status process може змінитись на waiting тільки різницею загальних слів до перекладених
      * status waiting можу змінитись на done тільки якщо юзер підтвердить кліком, а також може змінитись
      */
     var status = this.status;
-    if(this.total === this.translated){
+    if(this.total === this.translated)
+    {
         if(status === 0){this.status = 1;}
         if(status === 1 && approval)this.status = 2;
     }else {

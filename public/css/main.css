@@ -12,7 +12,7 @@ body {margin: 0px; padding: 0px;}
 iframe {display: none;}
 #header {height: 50px;}
 #aside {line-height: 2em; border: 1px solid #68889E; height: 2em;}
-#lightning {position: relative; height: 100%; width: auto; float: right; margin-right: 5px;}
+#lightning {position: relative; height: 100%; width: auto; float: left; margin-right: 5px;}
 #lightning span {vertical-align: middle; font-weight: bold; vertical-align: top;}
 #lightning img {position: relative; height : inherit; width: auto;}
 #content {height: 350px;overflow-y: scroll; width: inherit;}
@@ -253,3 +253,4 @@ background-color: whitesmoke;
     width: 100%;
 }
 #showTranslation {display: none;}
+#infoBar {border: 1px solid blue; height: 30px; width: 100%;}

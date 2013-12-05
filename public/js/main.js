@@ -4,6 +4,8 @@
             // Override this function so that Sammy doesn't mess with forms
             this._checkFormSubmission = function(form) {return (false);};
             storage = new Storage();
+            this.phraseStatusClass = "phraseStatus";
+            console.log(this.phraseStatusClass);
             function unescape(str) { return String(str).replace(/&lt;/g, "<").replace(/&gt;/g, ">");}
                // include the plugin
                this.use('Template', 'tmpl');
@@ -16,7 +18,7 @@
                         app.lightningCounter = document.getElementById("lightningCounter");
                         app.contentContainer = document.getElementById("content");
                         //відображаємо фрази
-                        this.trigger('show-phrases', {id : 4});
+                        this.trigger('show-phrases', {id : 3});
                     });
                     
                     $(document)
@@ -150,6 +152,7 @@
                            //console.time("extendWithPhrase");
                             app.sub.extendPhraseObjectsWithPhraseAction(function(){
                                 app.sub.triggerPhrasesProgressBar();
+                                app.trigger('show-phrase-status');
                             });
                            //console.timeEnd("extendWithPhrase");
                             app.trigger('setup-dictionary');
@@ -320,6 +323,17 @@
                         app.sub.triggerPhrasesProgressBar();
                     }
                 });
+                /**
+                 * Показує інформацію для фрази при кліку на коло біля фрази
+                 */
+               this.bind('show-phrase-status', function(e, data){
+                  var phraseStatusClass = "." + app.phraseStatusClass;
+                   $("." + app.phraseStatusClass).off('click').on('click', function(){
+                      var $this = $(this);
+                      var phraseId = $this.parent().data('phrase-id');
+                      console.log("phraseId " + phraseId);
+                   }); 
+               });
                });//app end
 
                 app.run('#/');

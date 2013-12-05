@@ -139,7 +139,7 @@ Subtitle.prototype.extendPhraseObjectsWithPhraseAction = function(callback){
 };
 Subtitle.prototype.addStatusContainerToPhrase = function($elem){
         var div = document.createElement("div");
-        div.className = "phraseStatus";
+        div.className = app.phraseStatusClass;
         try{
              $elem.insertBefore(div, $elem.firstChild);
              return $elem;
