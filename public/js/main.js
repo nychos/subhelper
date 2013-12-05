@@ -5,22 +5,18 @@
             this._checkFormSubmission = function(form) {return (false);};
             storage = new Storage();
             function unescape(str) { return String(str).replace(/&lt;/g, "<").replace(/&gt;/g, ">");}
-            function Translate(){};
-            Translate.prototype.removeObject = function($this, time){
-                var time = time || 500;
-                $this.animate({opacity: 0}, time, function(){ $this.remove();});
-            };
-            var translate = new Translate();//обєкт для операцій з перекладами
-                // include the plugin
-                this.use('Template', 'tmpl');
+               // include the plugin
+               this.use('Template', 'tmpl');
 
-                this.get('#/', function(context) {
+               this.get('#/', function(context) {
                     this.swap('');
                     context.render('templates/main.tmpl').appendTo(context.$element()).then(function(){
                         $('#shadow').appendTo('#content');//TODO: перенести в Main.tmpl
-                        app.phrasesContainer = $('#result');
+                        app.phrasesContainer = $('#phrasesContainer');
+                        app.lightningCounter = document.getElementById("lightningCounter");
+                        app.contentContainer = document.getElementById("content");
                         //відображаємо фрази
-                        this.trigger('show-phrases', {id : 3});
+                        this.trigger('show-phrases', {id : 4});
                     });
                     
                     $(document)
@@ -34,7 +30,7 @@
                        $('#shadow').hide();
                     });
                 });
-                 /**
+               /**
                 * Показує імя фільтра з кнопкою закриття
                 */
                this.bind('show-filter', function(e,data){
@@ -43,166 +39,68 @@
                    var container = $('#aside');//TODO: винести звідси
                    //передаємо назву фільтра та функцію, що робити по закриті фільтра
                    this.render('templates/filter.tmpl', {data : data}).appendTo(container).then(function(content){
-                       //console.log(content);
                        //кнопка закриття фільтра
                        $('.close_filter').off('click').on('click', function(){
-                           console.time("closeFilter");
                            $('.word-dialog').remove();
-                           //console.time("showAllPhrases");
-                           app.sub.showAllPhrases();
-                           //console.timeEnd("showAllPhrases");
+                           app.sub.sortByStatus();// <= app.sub.showAllPhrases();
                            $(this).parent().remove();//видаляємо фільтр
-                           console.timeEnd("closeFilter");
+                           app.sub.restoreScrollPosition();// відновлюємо позицію скорола
                        });
                    });
                });
                /**
-                * Шукає слово в онлайн словнику
-                */
-               this.bind('find-word-in-online-dictionary', function(e, data){
-                   //Яндекс.Переклад
-                    $.ajax({
-                      url : "https://translate.yandex.net/api/v1.5/tr.json/translate",
-                      data : {
-                          key : "trnsl.1.1.20131015T171502Z.d0a108edfd08efd8.b4b32462ed18e007414f408ca65a03d2a3342e85",
-                          text : data.word,
-                          lang : "uk"
-                      },
-                      datatype : 'json',
-                      success : function(response){
-                          var obj = $.parseJSON(response);
-                          console.log(obj);
-                      }
-                     }); 
-               });
-               /**
                 * Відображає діалогове меню для слова
                 */
-               this.bind('show-word-dialog', function(e, data){
-                   $('.word-dialog').remove();
+               this.bind('find-translation', function(e, data){
+                   $('.word-dialog').remove();//видаляємо поперднє діалогове вікно
                    var $this = this;
-                   this.render('templates/word-dialog.tmpl', {data : data}).prependTo($('#result')).then(function(content){
+                   this.render('templates/word-dialog.tmpl', {data : data}).prependTo(app.phrasesContainer).then(function(content){
                        var wordDialog = $('.word-dialog');
+                       var dialogWidth = wordDialog.width();
                        $(document).off('click').on('click', function(e){
-                            if ($(e.target).closest(wordDialog).length) return;//якщо клік відноситься до діалогового вікна пропускаємо
-                            wordDialog.remove();//в інакшому випадку видаляємо його
+                           //console.log(e.target);
+                           var onPlate = $(e.target).closest($('.word-dialog')).length;
+                           var addButton = $(e.target).hasClass('addTranslation');//TODO: придумати краще рішення
+                           if (onPlate || addButton) return;//якщо клік відноситься до діалогового вікна пропускаємо
+                           wordDialog.remove();//в інакшому випадку видаляємо його
+                           $(this).off('click');//забираємо обробник - він нам більше не потрібнийpo
                        });
-                       wordDialog.css({left : data.coords.left, top: data.coords.top + 20});
+                       app.trigger('normalize-word-dialog', data.coords);
+                       //wordDialog.css({left : data.coords.left, top: data.coords.top + 20});
                        wordDialog
                         .find('form').bind('submit', function(e){
+                           wordDialog.width(dialogWidth * 1.5);
                           e.preventDefault();
                           var data = $(this).serialize();
                           var arr = $(this).serializeArray();// => [translation, word]
-                          var word = arr[1].value;
                           var translation = arr[0].value;
+                          var word = arr[1].value;
                           $.ajax({
                              url : 'index/find-translation/',
                              type : 'post',
                              data : data,
                              success : function(response){
-                                 try{
                                     var obj = $.parseJSON(response);
                                     if(obj.status === "success"){
-                                        //console.log(obj.data);
-                                        $('.word-dialog').empty();
-                                        $this.render('templates/translation-check-dialog.tmpl', {data : obj.data, word : word, translation : translation}).prependTo($('.word-dialog')).then(function(content){
-                                            //шукаємо слово в Онлайн Словнику та вставляємо його в наше діалогове вікно
-                                           //app.trigger('find-word-in-online-dictionary', {content : $("#onlineDictionary .dictionaryBody"), word: word});
-                                           //показати переклад у власному списку
-                                           var my = $('#myDictionary');
-                                           var body = my.find('.dictionaryBody');
-                                           var header = $('#translationCheckHeader');
-                                           header.data('translation', translation);
-                                           header.data('word', word);
-                                           //перевірка перекладу з усіма словами з словнику
-                                           //якщо збігається тоді не пропонувати добавити а просто
-                                          
-                                           var translationDiv = $('<span></span>', {class : 'addTranslation', text : translation});
-                                           //console.log(obj.data.my.isMatched.match);
-                                           //якщо немає співпадінь, тоді пропонуємо добавити слово
-                                           if(obj.data.my && obj.data.my.isMatched.match === 1){
-                                                //TODO: слово співпало
-                                           }else {
-                                               //TODO: переробити
-                                               header
-                                                .on('mouseenter', function(){
-                                                    my.find('.noRecords').hide();//приховуємо запис no records
-                                                    app.cacheHtml = body.html();//кешуємо переклади
-                                                    body.append(translationDiv);//добавляємо переклад до списку
-                                               })
-                                               .on('mouseleave', function(){
-                                                    if(app.cacheHtml){
-                                                        //body.html(app.cacheHtml);//витягуємо дані з кешу
-                                                        //body.find('.noRecords').show();
-                                                        //app.cacheHtml = null;
-                                                    }
-                                               })
-                                               .on('click', function(){
-                                                    /* записуємо слово в словник користувача
-                                                     * але спочатку перевіряємо в загальному словнику, 
-                                                     * чи даний переклад міститься
-                                                     */
-                                                    var $this = $(this);
-                                                    var options = {};
-                                                    options.word = word;
-                                                    options.translation = translation;
-                                                    if(obj.data.common && obj.data.common.isMatched.match === 1){
-                                                        //переклад уже міститься в базі, нам потрібно просто його ідентифікатор
-                                                        for(var i in obj.data.common){
-                                                            var data = obj.data.common;
-                                                            if(data[i].translation === translation){ 
-                                                                options.id_translation = data[i].id;
-                                                                delete options.translation;
-                                                                app.trigger('add-translation', options);
-                                                               break;
-                                                            }
-                                                        }
-                                                    }else {
-                                                        //add new word translation word
-                                                       app.trigger('add-translation', options);
-                                                    }
-                                                    header.off();
-                                                    $('.addTranslation').remove();
-                                               });
-                                           }//else
-                                           $('#commonDictionary').off('click').on('click','button', function(){
-                                                  var $this = $(this);
-                                                  var obj = {};
-                                                  obj.id_translation = $this.data('id');
-                                                  obj.id_user = $this.data('id-user');
-                                                  obj.word = word;
-                                                  obj.translation = $this.text().trim();
-                                                  obj.$this = $this;
-                                                  app.trigger('add-translation', obj);
+                                        //якщо помінявся заряд до слова оновлюємо 
+                                        if(obj.data.charge)app.dictionary.updateTranslationCharge(obj.data.charge);
+                                        wordDialog.empty();
+                                       //console.log("translation:" + translation + " word: " + word);
+                                        $this.render('templates/translation-check-dialog.tmpl', {data : obj.data, word : word, translation : translation}).prependTo(wordDialog).then(function(content){
+                                            //here I am
+                                            app.trigger('normalize-word-dialog');
+                                            app.translate = new Translation({translation: translation, word: word, data: obj.data, content : $('#translationCheckDialog')});
+
+                                            app.translate.addTranslationEvent('click', function(data){
+                                                app.trigger('add-translation', data);
                                             });
-                                            //bind vs. on - різниця очевидна event тільки на елементи button, а bind на всі елементи що між ними
-                                            $('#myDictionary').off('click').on('click','button', function(e){
-                                               var $this = $(this);
-                                               var obj = {};
-                                               obj.id = $this.data('id');
-                                               obj.id_user = $this.data('id-user');
-                                               obj.translation = $this.text().trim();
-                                               obj.word = word;
-                                               obj.$this = $this;
-                                               app.trigger('remove-translation', obj);
-                                            });
-                                            //Добавлення перекладу Онлайн.Словника
-                                            $('#onlineDictionary').off('click').on('click','button', function(e){
-                                               var $this = $(this);
-                                               var obj = {};
-                                               obj.id_user = $this.data('id-user');
-                                               obj.translation = $this.text().trim();
-                                               obj.word = word;
-                                               obj.$this = $this;
-                                               app.trigger('add-translation', obj);
+                                            app.translate.removeTranslationEvent('click', function(data){
+                                               app.trigger('remove-translation', data); 
                                             });
                                         });
                                     }else if(obj.status === "error"){
-                                        console.log(obj.message);
+                                       //console.log(obj.message);
                                     }
-                                 }catch(e){
-                                     console.log(e);
-                                 }
                              }
                           });
                         })
@@ -210,34 +108,33 @@
                        //показати всі фрази зі словом
                        $('#showWordPhrases').bind('click', function(){
                           app.trigger('show-filter', data);
-                          console.time("showSimilarPhrases");
+                         //console.time("showSimilarPhrases");
                           app.sub.showSimilarPhrases(data);
-                          console.timeEnd("showSimilarPhrases");
+                         //console.timeEnd("showSimilarPhrases");
                         });
                         
-                        $('#showTranslation')
+                       $('#showTranslation')
                            .bind('mouseenter', function(e){
                                 e.preventDefault();
                                 //пошук перекладу для даного слова
                                 var word = data.word.toLowerCase();
-                                var translation = app.dictionary.getTranslation(word);
+                                var translation = app.dictionary.showTranslations(word);
                                 if(!translation){
                                     var info = "No translation";
                                 }else {
-                                    var info = translation.join(", ");
+                                    var info = translation;
                                 }
                                 $(this).text(info);
                            })
                            .bind('mouseleave', function(e){
                                 $(this).text("?");
-                           });
+                       });
                    });
                });
-                /**
+               /**
                  * Показує фрази зі субтитрів
-                 * @type Arguments
                  */
-                this.bind('show-phrases', function(e, data){
+               this.bind('show-phrases', function(e, data){
                  //перевіряємо локальне сховище 
                  var subObj = storage.checkItem("subtitles", data.id);
                  if(subObj){
@@ -250,12 +147,13 @@
                             app.sub.setPhrases($('.phrase'));//кешуємо фрази
                             var phrasesProgressBar = document.getElementById('phrasesProgressBar');
                             app.sub.setPhrasesProgressBar(phrasesProgressBar);
-                            console.time("extendWithPhrase");
+                           //console.time("extendWithPhrase");
                             app.sub.extendPhraseObjectsWithPhraseAction(function(){
                                 app.sub.triggerPhrasesProgressBar();
                             });
-                            console.timeEnd("extendWithPhrase");
+                           //console.timeEnd("extendWithPhrase");
                             app.trigger('setup-dictionary');
+                            app.sub.updateLightningCounter();
                             //наведення на фразу
                             $('.phrase').off('mouseenter').on('mouseenter', function(){
                                 var id = $(this).data('phrase-id');
@@ -265,7 +163,7 @@
                             });
                             
                             $("#sortSwitcher").off("click").on("click", function(){
-                               console.log("clicked");
+                              //console.log("clicked");
                                var $this = $(this),
                                    isChecked = $this.is(":checked");
                                (isChecked)? app.sub.sortPhrases("priority") : app.sub.sortPhrases("index");
@@ -273,6 +171,7 @@
                             
                             $('#sortByStatus').off("change").on("change", function(){
                                 var selected = $(this).find("option:selected").val();
+                                $('.close_filter').trigger('click');
                                 app.sub.sortByStatus(selected);
                             });
                         });
@@ -287,12 +186,19 @@
                             success : function(response){
                                 //console.log(response);
                                var obj = $.parseJSON(response);
-                               console.log(obj);
+                              //console.log(obj);
                                if(obj.status === "success"){
+                                   var user = {};
                                    //додати субтитр якщо ідентифікатор субтитра унікальний
                                    var dictionary = obj.data.dictionary;
+                                   user.lightnings = obj.data.lightnings;
+                                   user.id_user = obj.data.id_user;
                                    delete obj.data.dictionary;
+                                   delete obj.data.lightnings;
+                                   delete obj.data.id_user;
+                                   delete obj.data.timeProcess;
                                    storage.add("subtitles",obj.data);
+                                   storage.add("user", user);
                                    app.trigger('setup-dictionary', dictionary);//приводимо локальний словник до готовності
                                    //рекурсивно викликаємо функцію
                                    app.trigger('show-phrases', {id : data.id});
@@ -302,7 +208,10 @@
                     }
                     this.trigger('phrases-loaded');
                 });
-                this.bind('setup-dictionary', function(e, dictionary){
+               /**
+                * Налаштовує локальний словник до роботи
+                */
+               this.bind('setup-dictionary', function(e, dictionary){
                     if(!storage.checkItem("dictionary")){
                         if(typeof dictionary !== 'object')throw new Error('dictionary is not defined!');
                         storage.add("dictionary",dictionary);//TODO: чи не потребує оновлення
@@ -312,10 +221,12 @@
                     app.dictionary = new Dictionary(dictionary);
                     //console.log(app.dictionary);
                 });
-                //пошук фраз по слову
-                this.bind('phrases-loaded', function(){
+               /*
+                * пошук фраз по слову
+                */
+               this.bind('phrases-loaded', function(){
                     //при нажаті на слово
-                    $('#result').off('click').on('click','.phrase span', function(){
+                    app.phrasesContainer.off('click').on('click','.phrase span', function(){
                          var $this = $(this);
                          //слово знайти у wordMap
                          var word = $this.text().toLowerCase();
@@ -324,26 +235,16 @@
                          var wordObj = app.sub.getWord(word);
                          var countPhrases = wordObj.getCountOfPhrases();
                          var source = wordObj.getPhrasesIndexes();
-                         //console.log(wordObj);
+                         //зберігаємо стан скролінгу
+                          app.contentScroll = $(this).position().top;
+                         //console.log(app.contentScroll);
                          //відображення діалогового вікна для слова
-                         app.trigger('show-word-dialog', {word : word, source : source, count : countPhrases, coords : $this.position()});
+                         app.trigger('find-translation', {word : word, source : source, count : countPhrases, coords : $this.position()});
                      }); 
                 });
-                /*добавлення перекладу*/
-                this.bind('add-translation', function(e, data){
+               /*добавлення перекладу*/
+               this.bind('add-translation', function(e, data){
                     //console.log(data);
-                    var package = {};
-                    if(data.$this){
-                        package.$this = data.$this;//посилання на HTML object перекладу
-                        delete data.$this;
-                    }else {
-                        //видаляємо подібний переклад з загальному словнику, якщо власний співпав
-                        $('#commonDictionary button').each(function(){
-                           var $this = $(this);
-                           var id = data.id || data.id_translation;
-                           if($this.data('id') === id)translate.removeObject($this);
-                        });
-                    }
                     $.ajax({
                        url : 'index/add-translation',
                        type : 'post',
@@ -351,71 +252,75 @@
                        success : function(response){
                            var obj = $.parseJSON(response);
                            if(obj.status === "success"){
-                               console.log(obj);
-                                package.id = obj.data.id;// <= 1. obj.data.id 
-                                if(obj.data.id_user)package.id_user = obj.data.id_user;// 2. <= obj.data.id_user;
-                                if(data.translation)package.translation = data.translation; // 3.
-                                package.destination = $('#myDictionary .dictionaryBody');
-                                // передати дані на шаблон перекладу і вставити його до власного словника
-                                //console.log(package);
-                                app.trigger('translation-replace', package);
+                               //дане поле вказує що дані змінились на сервері, тому оновлюємо на клієнті
+                               if(obj.data.hasOwnProperty("lightnings")){
+                                   app.sub.updateLightnings(obj.data.lightnings, function(){
+                                      app.sub.updateLightningCounter(); 
+                                      delete obj.data.lightnings;
+                                   });
+                               }
+                                app.trigger('translation-replace', obj.data);
                                 app.trigger('add-translation-to-dictionary', data);
                            }else {
-                                 console.warn(response);
+                                //console.warn(response);
                            }
                        }
                     });
                 });
-                /*видалення перекладу*/
-                this.bind('remove-translation', function(e, data){
+               /*видалення перекладу*/
+               this.bind('remove-translation', function(e, data){
                     //console.log(data);
-                    data.destination = $('#commonDictionary .dictionaryBody');
+                    var $this = data.$this;
+                    delete data.$this;
                     $.ajax({
                        url : 'index/remove-translation',
-                       data : {id : data.id, word : data.word},
+                       data : data,//id : data.id, word : data.word
                        type : 'post',
                        success : function(response){
-                           //console.log(response);
-                           app.trigger('translation-replace', data);
+                           app.translate.hide($this);
                            //app.trigger('remove-word-from-dictionary');//TODO:видалити переклад з локального словника
                        }
                     });
                 });
-                this.bind('translation-replace', function(e,data){
-                    //console.log(data);
-                    var destination = data.destination;
-                    var obj = {};
-                    if(data.id)obj.id = data.id;
-                    if(data.id_user)obj.id_user = data.id_user;
-                    //else obj.id_user = 1;//default user from session
-                    if(data.translation){
-                        obj.translation = data.translation;
-                    }else {obj.translation = $('#translationCheckHeader').data('translation').trim();}
-                    //console.log(obj);
-                    this.render('templates/translation-item.tmpl', obj).then(function(content){
-                        //console.log(content);
+               /**
+                 * При добавлені перекладу у власний Словник, формує відповідну кнопку
+                 */
+               this.bind('translation-replace', function(e,data){
+                   //console.log(data);
+                    //генеруємо кнопку з даними і вставляємо її до решти власних перекладів
+                    this.render('templates/translation-item.tmpl', data).then(function(content){
                         //1. перемістили запозичене слово
-                        destination.append(content);
                         //2. видалили оригінал
-                        if(data.$this) translate.removeObject(data.$this);
+                        //3.перевірити на співпадіння в Загальному або Онлайн словнику
+                       app.translate.moveTranslation(content); 
                     }); 
                 });
-                /**
+               this.bind('normalize-word-dialog', function(e, coords){
+                    if(coords) app.coords = coords;
+                    var dialog = $('.word-dialog');
+                    var containerWidth = app.phrasesContainer.width(); //1.межі контейнера
+                    var width = dialog.outerWidth(); // 2. ширина діалога
+                    var left = dialog.offset().left; // 3. ліва межа діалогового вікна
+                    var right = width + app.coords.left; // 4. визначаємо праву межу
+                    var leftEdge = null;
+                    // 5. якщо права межа переходить праву межу контейнера,
+                    // змінюємо розташування, щоб вікно вмістилось 
+                    if(right > containerWidth) leftEdge = containerWidth - width;
+                    var leftPosition = leftEdge || app.coords.left;
+                    dialog
+                       .css({left : leftPosition, top: app.coords.top + 20})
+                       .animate({opacity: 1}, 500);
+               });
+               /**
                  * Добавлення перекладу в локальний словник
                  */
-                this.bind('add-translation-to-dictionary', function(e, data){
-                    //console.log(data);
-                    //викликати dictionary API для добавлення перекладу для вказаного слова
-                    console.time("addTranslation");
+               this.bind('add-translation-to-dictionary', function(e, data){
                     var result = app.dictionary.addTranslation(data.word, data.translation);
-                    console.timeEnd("addTranslation");
                     if(result){
-                        console.info("Translation successfully added");
-                        //if(!confirm("Continue translation?"))$('.word-dialog').remove();
                         app.sub.triggerPhrasesProgressBar();
                     }
                 });
-                });//app end
+               });//app end
 
                 app.run('#/');
         });//document.ready end

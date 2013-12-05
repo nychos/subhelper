@@ -1,9 +1,9 @@
 <div class="word-dialog">
-    <button id='showWordPhrases'>Show all <%= data.count %> phrases</button>
+    <button id='showWordPhrases' class="niceButton">Show all <%= data.count %> phrases</button>
     <form autocomplete="off">
         <input type="text" required pattern='[а-яіїА-ЯіЇ]+(-[а-яіїА-ЯіЇ]+)*' name="translation" autocomplete="off"/>
         <input type="hidden" name="word" value="<%= data.word %>"/>
-        <input type="submit" value="Check" />
+        <input type="submit" value="Check" class="niceButton" />
         <button id="showTranslation">?</button>
     </form>
 </div>

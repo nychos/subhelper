@@ -23,6 +23,9 @@ Word.prototype.getTranslationAvailability = function(){
 Word.prototype.setTranslationStatus = function(status){
   this.hasTranslation = status;
 };
+Word.prototype.getCharge = function(){
+    
+};
 
 
 

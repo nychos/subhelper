@@ -16,6 +16,10 @@ class IndexController extends Zend_Controller_Action
     public function init()
     {
         /* Initialize action controller here */
+        $this->user = new Zend_Session_Namespace('user');
+        $this->user->id_user = 3;
+        $this->lightning = new Application_Model_Lightnings();
+        $this->charge = new Application_Model_Charges();
     }
 
     public function indexAction()
@@ -52,7 +56,7 @@ class IndexController extends Zend_Controller_Action
          if($this->getRequest()->isXmlHttpRequest()){
              $id = $this->getRequest()->getParam('id');
              $word = $this->getRequest()->getParam('word');
-             $id_user = 1;//TODO: Zend_Session implement
+             $id_user = $this->user->id_user;//TODO: Zend_Session implement
              $translations = new Application_Model_Translations();
              $result = $translations->deleteTranslationConnection($id,$word, $id_user);
              if($result){
@@ -94,7 +98,7 @@ class IndexController extends Zend_Controller_Action
             $referrer = $this->getRequest()->getParam('id_user');
             $useOnlineTranslationFlag = false;
             if(intval($referrer) === 2)$useOnlineTranslationFlag = true;
-            $data['id_user'] = 1; //TODO : from Session
+            $data['id_user'] = $this->user->id_user; //TODO : from Session
             $package = array("id" => $id_translation);//для переміщення слова у власний словник
             ($referrer) ? $package['id_user'] = $referrer : $package['id_user'] = $data['id_user'];
             $translations = new Application_Model_Translations();
@@ -104,6 +108,8 @@ class IndexController extends Zend_Controller_Action
                 //використовуємо переклад
                 if($referrer)$data['referrer'] = $referrer;
                 if($result = $translations->useTranslation($data)){
+                    $result = Custom_Events::trigger("user-added-translation");
+                    if($result)$data['lightnings'] = $result;
                     $this->message("Successfully used translation", $package);
                 }else {
                     $this->message("Adding translation failed", $result, "error");
@@ -113,7 +119,10 @@ class IndexController extends Zend_Controller_Action
                 if($referrer)$data['referrer'] = $referrer;
                 ($useOnlineTranslationFlag) ? $result = $translations->useOnlineTranslation($data) : $result = $translations->addTranslation($data);
                 if($result){
-                    $this->message("Successfully added new translation", array("id" => $result, "id_user" => $data['id_user']));
+                    $data = array("id" => $result, "id_user" => $data['id_user'], "word" => $data['word'], "translation" => $translation);
+                    $result = Custom_Events::trigger("user-added-translation");
+                    if($result)$data['lightnings'] = $result;
+                    $this->message("Successfully added new translation", $data);
                 }else {
                     $this->message("Translation adding failed", $result, "error");
                 }
@@ -122,7 +131,8 @@ class IndexController extends Zend_Controller_Action
     }
     //перевіряє чи переклад співпав з тим що в користувацькій базі
     public function isTranslationCorrect($translation, $wordData, $matchedMessage, $notMatchedMessage){
-         $isMatched = $this->checkTranslation($translation, $wordData);
+         $isMatched = $this->checkTranslation($translation, $wordData);;
+         
          if($isMatched){
              return array('match' => $isMatched, 'message' => $matchedMessage);
          }else {
@@ -139,9 +149,10 @@ class IndexController extends Zend_Controller_Action
          if($this->getRequest()->isXmlHttpRequest()){
             $translation = trim($this->getRequest()->getParam('translation'));
             $word = $this->getRequest()->getParam('word');
-            $id_user = 1; //TODO : from Session
+            $id_user = $this->user->id_user; //TODO : from Session
             $translations = new Application_Model_Translations();
             $package = array();
+            //TODO: некоректний запит до бази
             $result = $translations->findTranslations($word, $id_user);
             //якщо знайдено у власному словнику або загальному, в інакшому випадку шукаємо в онлайн словнику
             if($result){
@@ -160,14 +171,16 @@ class IndexController extends Zend_Controller_Action
                     $data['isMatched'] = $isMatched;
                     $package['common'] = $data;
                 }
-            }else {
-            
-                $onlineTranslation = $this->findWordInOnlineDictionary($word);
+            }//else {
+                //TODO: вкл/викл назад підтримку словника
+                $onlineTranslation = $this->findWordInOnlineDictionary($word);;
+                
+                //var_dump($onlineTranslation);die();
                 if($onlineTranslation){
                     $isOnlineUnique = $this->checkOnlineTranslationForDuplicates($onlineTranslation, $result);
                     if($isOnlineUnique){
                         $package['online']['translation'] = $onlineTranslation;
-                        $package['online']['id_user'] = 2;//yandex user
+                        $package['online']['id_user'] = 2;//TODO: забрати hardcode yandex user
                         $isMatched = $this->isTranslationCorrect($translation,  $onlineTranslation, "Переклад, знайдений в онлайн словнику, співпав", "Переклад не співпав з тими що містяться в онлайн словнику");
                         $package['online']['isMatched'] = $isMatched;
                         if(isset($package['my'][0]['id_word']))$id_word = $package['my'][0]['id_word'];
@@ -175,20 +188,47 @@ class IndexController extends Zend_Controller_Action
                         if(isset($id_word))$package['online']['id_word'] = $id_word;
                     }
                 }
-            }
+            //}
             /**
              * Формуємо дані для бонусної системи нарахування
              */
-            $bonusInfo = array();
-            $bonusInfo['issetMy'] = isset($package['my']);
-            $bonusInfo['issetCommon'] = isset($package['common']);
-            $bonusInfo['issetOnline'] = isset($package['online']);
-            $bonusInfo['myMatch'] = $bonusInfo['issetMy'] && $package['my']['isMatched']['match'];
-            $bonusInfo['commonMatch'] = $bonusInfo['issetCommon'] && $package['common']['isMatched']['match'];
-            $bonusInfo['onlineMatch'] = $bonusInfo['issetOnline'] && $package['online']['isMatched']['match'];
+            $info = array();
+            $info['my'] = isset($package['my']);
+            $info['common'] = isset($package['common']);
+            $info['online'] = isset($package['online']);
+            $info['myMatch'] = $info['my'] && $package['my']['isMatched']['match'];
+            $info['commonMatch'] = $info['common'] && $package['common']['isMatched']['match'];
+            $info['onlineMatch'] = $info['online'] && $package['online']['isMatched']['match'];
             
-            $package['bonus'] = $bonusInfo;
-            //$bonus = $this->chargeBonuses($bonusInfo);
+            //влучання в переклад Словників
+            if(!$info['my'] && ($info['commonMatch'] || $info['onlineMatch'])){
+               $result = Custom_Events::bind(array(
+                    'location' => $this->lightning,
+                    'method' => 'doLightning',
+                    'event' => 'user-added-translation',
+                    'data' => true)
+                );
+            //додатковий переклад
+            }else if($info['my'] && !$info['myMatch']){
+                Custom_Events::bind(array(
+                   'location' => $this->lightning,
+                    'method' => 'doLightning',
+                    'event' => 'user-added-translation',
+                    'data' => false)
+                );
+            //збільшення заряду при вказанні правильного перекладу    
+            }else if($info['myMatch']){
+                $id = $package['my']['isMatched']['match'];
+                if($data = $this->compareMatchedTranslation($package['my'], $id)){
+                    $data['increase'] = 1; //for discharging -1
+                    if($charge = $this->charge->doCharge($data)){
+                            $package['charge']['word'] = $word;
+                            $package['charge']['charge'] = $charge;
+                            $package['charge']['translation'] = $translation;
+                    }
+                }
+            }
+            $package['info'] = $info;
             
             if(count($package)){
                 $this->message("Переклади витягнені з ".count($package). " джерел", $package);
@@ -198,17 +238,23 @@ class IndexController extends Zend_Controller_Action
          }//end xmlrequest
     }
     /**
-     * @param array $bonusInfo
+     * 
+     * @param array $arr
+     * @param type $id
+     * @return boolean
      */
-    public function chargeBonuses(Array $arr){
-        $isMatchedWithOthers = $arr['commonMatch'] || $arr['onlineMatch'];
- 
-        if(!$arr['issetMy'] && $isMatchedWithOthers){// +1 блискавка
-            
-        }else if($arr['myMatch']){//+1 заряд до перекладу
-            
-        }else {return false;}
+    public function compareMatchedTranslation(Array $arr, $id){
+        foreach($arr as $value){
+            if(intval($value['id']) === intval($id))return $value;
+        }
+        return false;
     }
+    /**
+     * Перевіряє чи такий переклад уже міститься в Народному словнику
+     * @param type $onlineTranslation
+     * @param type $result
+     * @return boolean
+     */
     public function checkOnlineTranslationForDuplicates($onlineTranslation, $result){
         if($result){
             foreach($result as $value){
@@ -243,8 +289,12 @@ class IndexController extends Zend_Controller_Action
     {
         $newPhrases = array();
         foreach($phrases as $index => $phrase){
-            if(isset($phrase['phrase']))$phrase = $phrase['phrase'];
+            if(isset($phrase['phrase'])){
+                $id = $phrase['id'];
+                $phrase = $phrase['phrase'];
+            }
             $newPhrases[$index]['phrase'] = $this->wrapWordsInPhrase($phrase);//обгортає слова в фразі
+            $newPhrases[$index]['id'] = $id;
             preg_match_all($this->_wordPattern, $phrase, $words, PREG_OFFSET_CAPTURE);//пошук підстроки
 
             //проходиться по всім словам у фразі
@@ -358,6 +408,7 @@ class IndexController extends Zend_Controller_Action
                 $this->time['db']['addPhrases']['duration'] = round(($end - $start) * 1000, 3);
                 
                 if(!$addPhrases)$this->message("Помилка при добавленні фраз", false, "error");
+                $phrases = $phrase->getPhrases($id);//витягуємо ще раз
              }
              
              //3. витягнули користувацький словник
@@ -374,7 +425,12 @@ class IndexController extends Zend_Controller_Action
              $end = $this->getmicrotime();
              $this->time['method']['breakPhrasesIntoWords']['duration'] = round(($end - $start) * 1000, 3);
              //var_dump($arr);die();
-
+             //5. витягнули блискавки користувача
+             $start = $this->getmicrotime();
+             $lightnings = new Application_Model_Lightnings();
+             $userLightnings = $lightnings->getLightings();
+             $end = $this->getmicrotime();
+             $this->time['db']['getLightnings']['duration'] = round(($end - $start) * 1000, 3);
              //var_dump($dictionary);die();
              $words = $arr['words'];
              $phrases = $arr['phrases'];
@@ -393,7 +449,8 @@ class IndexController extends Zend_Controller_Action
                  'phrases' => $phrases,
                  'wordMap' => $words,
                  'dictionary' => $dictionary,
-                 'timeProcess' => $this->time
+                 'timeProcess' => $this->time,
+                 'lightnings' => $userLightnings
              );
              if(count($row)){
                  $this->message("Subtitle successfully fetched", $data);
@@ -416,11 +473,12 @@ class IndexController extends Zend_Controller_Action
                 $firstLetter = $this->getFirstLowerLetter($word);
                 //здійснити пошук слова у wordMap і добавити звязок
                 $translation = iconv('cp1251', 'utf8', $value['translation']);
+                $charge = $value['charge'];
                 
                 if(isset($newArr[$firstLetter][$word]))
-                    array_push($newArr[$firstLetter][$word],$translation);
+                    array_push($newArr[$firstLetter][$word],array("translation" => $translation, "charge" => $charge));
                 else 
-                    $newArr[$firstLetter][$word] = array($translation);
+                    $newArr[$firstLetter][$word][] = array("translation" => $translation, "charge" => $charge);
             }
             $this->dictionary = $newArr;
             return $newArr;
@@ -478,7 +536,7 @@ class IndexController extends Zend_Controller_Action
                //$destination = $fileInfo['subtitle']['destination'];//папка де міститься завантаження
                //$file = $destination."/".$filename;//повний шлях до файлу
                $data['subtitle'] = '/uploads/'.$filename;
-               $data['id_user'] = 1;//з сесії витягуватимо змінну
+               $data['id_user'] = $this->user->id_user;//з сесії витягуватимо змінну
                 $subtitles = new Application_Model_Subtitles();
                 $response = $subtitles->addSubtitle($data);
                 if($response){

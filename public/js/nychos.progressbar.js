@@ -7,6 +7,8 @@
 function ProgressBar(container) {
     if(!container instanceof HTMLElement)throw new Error("container is not ready!");
     this.container = container;
+    this.currentValue = null;
+    this.textContainer = null;
     this.type = "h";//horizontal
 };
 ProgressBar.prototype.setType = function(type){
@@ -31,8 +33,8 @@ ProgressBar.prototype.getProgressHeight = function(){
 ProgressBar.prototype.setProgressWidth = function(value){
     this.pWidth = Math.ceil(value);
     this.pHeight = this.cHeight;
-    console.log("pwidth: "+ value);
-    console.log("cHeight: " + this.cHeight);
+   //console.log("pwidth: "+ value);
+   //console.log("cHeight: " + this.cHeight);
 };
 ProgressBar.prototype.setProgressHeight = function(value){
     this.pHeight = Math.ceil(value);
@@ -87,6 +89,7 @@ ProgressBar.prototype.getProgressValue = function(){
 };
 //клас прогрес-контейнера
 ProgressBar.prototype.progressClass = "progressContainer";
+ProgressBar.prototype.textClass = "progressText";
 /**
  *Початок програми
  */
@@ -102,8 +105,8 @@ ProgressBar.prototype.init = function(){
 ProgressBar.prototype.defineContainerParameters = function(){
     this.cWidth = this.getInnerValue(this.container, 0);
     this.cHeight = this.getInnerValue(this.container, 1);
-    console.log("width: " + this.cWidth);
-    console.log("height: " + this.cHeight);
+   //console.log("width: " + this.cWidth);
+   //console.log("height: " + this.cHeight);
 };
 /**
  * 
@@ -136,8 +139,44 @@ ProgressBar.prototype.createProgressContainer = function(){
     this.progressContainer = div;
     this.redefineProgressPosition();
 };
+ProgressBar.prototype.createTextContainer = function(){
+    var div = document.createElement("div");
+    div.className = this.textClass;
+    div.style.position = "absolute";
+    div.style.zIndex = 2;
+    div.style.fontSize = "9px";
+    //div.innerHTML = this.getCurrentValue() + "%";
+    this.container.appendChild(div);
+    this.textContainer = div;
+    this.setTextValue();
+    //відцентрувати відносно контейнера
+    this.center(div);
+};
+//TODO: протестувати
+ProgressBar.prototype.setTextValue = function(value){
+    if(this.textContainer instanceof HTMLElement){
+        var value = value || this.getCurrentValue();
+        value += "%";
+        this.textContainer.innerHTML = value;
+    }else {throw new Error("text container is undefined");}
+};
+ProgressBar.prototype.center = function(elem){
+    var left = this.cWidth / 2 - elem.offsetWidth / 2;
+    var top = this.cHeight / 2 - elem.offsetHeight / 2;
+    elem.style.left = left + "px";
+    elem.style.top = top + "px";
+};
 ProgressBar.prototype.getProgressContainer = function(){
     return this.progressContainer;
+};
+ProgressBar.prototype.getCurrentValue = function(){
+    if (this.currentValue != null) return this.currentValue;
+    var progressVal = this.getProgressValue();
+    var containerVal = this.getContainerValue();
+   //console.log("pVal: " + progressVal);
+   //console.log("cVal: " + containerVal);
+    this.currentValue = (this.getProgressValue() * 100) / this.getContainerValue();
+    return this.currentValue;
 };
 /**
  *Встановити значення прогресу
@@ -149,7 +188,15 @@ ProgressBar.prototype.setValue = function(value){
     if(!isNaN(value) && !(value >= 0 && value <= 100))throw new Error("value must be percent in range beetween 1-100 %");
     var result = this.getContainerValue() / 100 * value;
     this.setProgressValue(result);
+    //визначаємо поточне значення
+    this.currentValue = value;
+    //перевіряємо чи існує текстовий контейнер
+    if (!this.textContainer)
+        this.createTextContainer();
+    else 
+        this.setTextValue();
 };
 ProgressBar.prototype.destroy = function(){
     this.container.removeChild(this.progressContainer);
+    this.container.removeChild(this.textContainer);
 };

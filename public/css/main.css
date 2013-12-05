@@ -12,6 +12,9 @@ body {margin: 0px; padding: 0px;}
 iframe {display: none;}
 #header {height: 50px;}
 #aside {line-height: 2em; border: 1px solid #68889E; height: 2em;}
+#lightning {position: relative; height: 100%; width: auto; float: right; margin-right: 5px;}
+#lightning span {vertical-align: middle; font-weight: bold; vertical-align: top;}
+#lightning img {position: relative; height : inherit; width: auto;}
 #content {height: 350px;overflow-y: scroll; width: inherit;}
 .phrase {
     border: 1px solid #E5E5E5;
@@ -20,7 +23,7 @@ iframe {display: none;}
     margin-right: 10px;
     padding: 10px;
 }
-#result {position: relative;}
+#phrasesContainer {position: relative;}
 #shadow {position: absolute;top: 0;border-radius: 10px;z-index: 1000; background-color: whitesmoke; width: 50%; height: 50%; opacity: 0.7;display: none;}
 #shadow > * {text-align: center;}
 #logo {position: relative; float: left;}
@@ -47,19 +50,41 @@ input.inputSubmit {display:none;}
     position: relative;
 }
 .close_filter img {border: 1px solid #ccc;}
-.word-dialog {border: 1px solid #91BE3F; position: absolute;background-color: whitesmoke; width: 300px;}
-#translationCheckDialog {position: absolute;z-index: 2; border: 1px double #fff;
-width: 600px;
+.word-dialog {
+    background-color: whitesmoke;
+    border: 1px outset whitesmoke;
+    border-radius: 5px 5px 5px 5px;
+    padding: 10px;
+    position: absolute;
+    width: 300px;
+    opacity: 0;
+}
+#translationCheckDialog {position: relative;z-index: 3;
+width: auto;
 background-color: whitesmoke;
 }
-#translationCheckHeader {font-size: 1.5em; color: #000; border: 1px outset whitesmoke; border-radius: 5px;margin: 2px; padding: 2px;}
+#translationCheckHeader {
+    line-height: 2em;
+    font-size: 1em;
+    color: #000;
+    border: 1px outset whitesmoke;
+    border-radius: 5px;
+    margin: 2px;
+    padding: 2px;
+    background: linear-gradient(to top, #C6C6C6, #FFFFFF) repeat scroll 0 0 transparent;
+}
+.dictionaryType {
+    border: 1px solid #CCCCCC;
+    margin-top: 2px;
+}
 #translationCheckBody {color: #000;}
 .translationMessage {font-size: 10px; clear: both;}
 .addTranslation {border: 1px dotted #444444; padding: 5px;}
+.hoveredAddTranslation {border: 1px solid black !important;}
 .dictionaryBody button { border-radius: 5px; padding: 5px;}
 #myDictionary button:hover {background-color: #f44040; font-weight: bold; color: #fff;}
 #commonDictionary button:hover {background-color: #92c81f; font-weight: bold; color: #fff;}
-.phrase span {
+.phrase span, .niceButton {
     background-color: whitesmoke;
     border: 1px outset whitesmoke;
     border-radius: 5px 5px 5px 5px;
@@ -209,3 +234,22 @@ background-color: whitesmoke;
     background: #f44040;
     background: linear-gradient(to top, #68889E, #FFFFFF) repeat scroll 0 0 transparent;
 }
+.progressText {
+    font-size: "9px";
+}
+.hidePhrase {display: none;}
+
+#showWordPhrases {
+    width: 100%;
+    line-height: 1em;
+}
+.word-dialog input {
+    float: right;
+    margin-top: 5px;
+    position: relative;
+}
+.word-dialog input[type=text] {
+    height: 25px;
+    width: 100%;
+}
+#showTranslation {display: none;}

@@ -4,9 +4,10 @@ function Subtitle(data){
         throw new Error("Data is empty");
     }
     this.data = data;
-    console.time("extendWordWithClass");
+    this.sortStatus = "all";
+   //console.time("extendWordWithClass");
     this.extendWordObjectsWithWordClass();
-    console.timeEnd("extendWordWithClass");
+   //console.timeEnd("extendWordWithClass");
 };
 /**
  * Встановлюємо фрази
@@ -35,6 +36,7 @@ Subtitle.prototype.extendWordObjectsWithWordClass = function(){
  * @returns {undefined}
  */
 Subtitle.prototype.getWord = function(word){
+    if(!word)throw new Error("Word " + word + " not found");
     var firstLetter = this.getFirstLetter(word);
     for(var i in this.data.wordMap){
         if(i === firstLetter){
@@ -46,7 +48,6 @@ Subtitle.prototype.getWord = function(word){
             }
         }
     }
-    throw new Error("Word " + word + " not found");
 };
 /**
  * Витягує Слово по літері на індексу
@@ -70,12 +71,12 @@ Subtitle.prototype.showSimilarPhrases = function(data){
          var sourceLength = data.source.length;
          var length = this.$phrases.length;
          for(var i = 0; i < length; i++){
-             this.$phrases[i].style.display = "none";
+             this.$phrases[i].classList.add("hidePhrase");//.style.display = "none";
              for(var j = 0; j < sourceLength; j++){
                 var index = data.source[j];
                 if(i === index){
                     var phrase = this.$phrases[index];
-                    phrase.style.display = 'block';
+                    phrase.classList.remove("hidePhrase");//.style.display = 'block';
                     var childLength = phrase.children.length;
                     var children = phrase.children;
                     if(this.phraseChildrenWithActiveWords)
@@ -99,11 +100,11 @@ Subtitle.prototype.showAllPhrases = function(){
     this.clearActiveWords();
     var length = this.$phrases.length;
     for(var i = 0; i < length; i++){
-        this.$phrases[i].style.display = "block";
+        this.$phrases[i].classList.remove("hidePhrase");//.style.display = "block";
     }
 };
 Subtitle.prototype.clearActiveWords = function(){
-    console.time("clearActiveWords");
+   //console.time("clearActiveWords");
     if(this.phraseChildrenWithActiveWords){
         var length = this.phraseChildrenWithActiveWords.length;
         for(var i = 0; i < length; i++){
@@ -115,7 +116,7 @@ Subtitle.prototype.clearActiveWords = function(){
         }
         this.phraseChildrenWithActiveWords.length = 0;
     }
-    console.timeEnd("clearActiveWords");
+   //console.timeEnd("clearActiveWords");
 };
 Subtitle.prototype.getFirstLetter = function(word){
     return word[0].toLowerCase();
@@ -127,9 +128,9 @@ Subtitle.prototype.extendPhraseObjectsWithPhraseAction = function(callback){
         this.data.phrases[i].__proto__ =  this.phraseObject;
         this.data.phrases[i].$phrase = this.addStatusContainerToPhrase(this.$phrases[i]);
         if(i == 0){
-            console.time("defineValuesForGroupOfSimilarProgressBars");
+           //console.time("defineValuesForGroupOfSimilarProgressBars");
             this.defineContainerValuesForGroupOfSimilarProgressBars();
-            console.timeEnd("defineValuesForGroupOfSimilarProgressBars");
+           //console.timeEnd("defineValuesForGroupOfSimilarProgressBars");
         }
         this.data.phrases[i].index = i;
         this.data.phrases[i].init();
@@ -143,7 +144,7 @@ Subtitle.prototype.addStatusContainerToPhrase = function($elem){
              $elem.insertBefore(div, $elem.firstChild);
              return $elem;
         }catch(e){
-            console.warn(e);
+           //console.warn(e);
         }
 };
 Subtitle.prototype.getPhrase = function(id){
@@ -166,11 +167,10 @@ Subtitle.prototype.sortPhrases = function(type){
     var arr = [];
     for(var i in sortPhrases)arr.push(sortPhrases[i].$phrase);
     var container = document.getElementsByClassName("subtitle")[0];
-    var result = document.getElementById("result");
     var div = container.cloneNode(false);
-    result.removeChild(container);
+    app.phrasesContainer[0].removeChild(container);
     for(var i in arr)div.appendChild(arr[i]);
-    result.appendChild(div);
+    app.phrasesContainer[0].appendChild(div);
 };
 /**
  * Визначаємо параметри (ширину та висоту) для елемента фрази, який є загальним
@@ -190,22 +190,44 @@ Subtitle.prototype.defineContainerValuesForGroupOfSimilarProgressBars = function
     //console.log("cHeight" + ProgressBar.prototype.cHeight);
 };
 Subtitle.prototype.sortByStatus = function(status){
+    if(status)this.sortStatus = status;
+    this.clearActiveWords();
     for(var i in this.data.phrases){
         var phrase = this.data.phrases[i];
-        if(status === "all"){phrase.$phrase.style.display = "block";continue;}
-        (phrase.checkStatus(status)) ? phrase.$phrase.style.display = "block" : phrase.$phrase.style.display = "none";
+        if(this.sortStatus === "all"){phrase.$phrase.classList.remove("hidePhrase")/*.style.display = "block"*/;continue;}
+        (phrase.checkStatus(this.sortStatus)) ? phrase.$phrase.classList.remove("hidePhrase")/*.style.display = "block"*/ : phrase.$phrase.classList.add("hidePhrase")/*.style.display = "none"*/;
     }
+};
+Subtitle.prototype.getPercent = function(number, total)
+{
+  if(!isNaN(number) && !isNaN(total)){
+    return number * 100 / total;
+  }else{
+      throw new Error("MUST be only numbers");
+  }
 };
 Subtitle.prototype.getPercentOfFinishedPhrases = function(){
     var phrases = this.data.phrases;
-    var waiting = 0;
+    var waiting = [], done = [];
     var total = phrases.length;
     for(var i in phrases){
-        if(phrases[i].status === 1)++waiting;
+        if(phrases[i].status === 1)waiting.push(phrases[i].id);
+        if(phrases[i].status === 2)done.push(phrases[i].id);
     }
-    var percent = waiting *  100 / total;
+    var waitingPercent = this.getPercent(waiting.length, total);//waiting *  100 / total;
+    var donePercent = this.getPercent(done.length, total);
+    
     //var obj = {waiting: waiting, total : total, process : process};
-    return percent;
+    return {
+        waiting: {
+            percent: waitingPercent,
+            indexes: waiting
+        },
+        done: {
+            percent: donePercent,
+            indexes: done
+        }
+    };
 };
 /*
  * Встановлюємо загальний прогрес бар 
@@ -214,10 +236,32 @@ Subtitle.prototype.setPhrasesProgressBar = function(container){
     this.phrasesProgressBar = new ProgressBar(container);
     this.phrasesProgressBar.defineContainerParameters();
     this.phrasesProgressBar.init();
+	
 };
 Subtitle.prototype.triggerPhrasesProgressBar = function(){
     if(!this.phrasesProgressBar instanceof ProgressBar) throw new Error("phrasesProgressBar is not defined!");
     var percent = this.getPercentOfFinishedPhrases();
     console.log(percent);
-    this.phrasesProgressBar.setValue(percent);
+    this.phrasesProgressBar.setValue(percent.waiting.percent);
+};
+Subtitle.prototype.updateLightnings = function(lightnings, callback){
+    var user = storage.get("user")[0];
+    user.lightnings = lightnings;
+    storage.save("user", user);
+    callback.call(this);
+};
+Subtitle.prototype.updateLightningCounter = function(){
+    var lightnings = storage.get("user")[0]["lightnings"];
+   //console.log(app.lightningCounter);
+   //console.log(lightnings);
+    app.lightningCounter.innerHTML = lightnings;
+};
+/**
+ * Відновлює позицію скрола
+ * @returns {undefined}
+ */
+Subtitle.prototype.restoreScrollPosition = function(){
+    //$(app.contentContainer).animate({scrollTop : scrollPosition});
+    app.contentContainer.scrollTop = app.contentScroll;
+    app.contentScroll = 0;
 };
