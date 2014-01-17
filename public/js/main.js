@@ -5,7 +5,11 @@
             this._checkFormSubmission = function(form) {return (false);};
             storage = new Storage();
             this.phraseStatusClass = "phraseStatus";
-            console.log(this.phraseStatusClass);
+            //$('*').tipsy();
+             $(".custom-select").each(function(){
+                $(this).wrap("<span class='select-wrapper'></span>");
+                $(this).after("<span class='holder'></span>");
+            });
             function unescape(str) { return String(str).replace(/&lt;/g, "<").replace(/&gt;/g, ">");}
                // include the plugin
                this.use('Template', 'tmpl');
@@ -13,23 +17,32 @@
                this.get('#/', function(context) {
                     this.swap('');
                     context.render('templates/main.tmpl').appendTo(context.$element()).then(function(){
-                        $('#shadow').appendTo('#content');//TODO: перенести в Main.tmpl
                         app.phrasesContainer = $('#phrasesContainer');
                         app.lightningCounter = document.getElementById("lightningCounter");
                         app.contentContainer = document.getElementById("content");
+                        app.phraseStatusContainer = $('#phraseStatusContainer');
+                        app.shadow = $('#shadow');
+                      
+                        this.trigger('ajax-start-and-stop');
                         //відображаємо фрази
-                        this.trigger('show-phrases', {id : 3});
+                        this.trigger('show-phrases', {id : 1});
                     });
                     
+                    
+                });
+                /**
+                 * Показує прогрес бар
+                 */
+                this.bind('ajax-start-and-stop', function(){
                     $(document)
                     .ajaxStart(function(){
                        //show preloading
-                       $('#shadow').show().center('parent');
-                        $('#shadow img').center('parent');
+                        app.shadow.addClass('show').center('parent');
+                        app.shadow.find('img').center('parent');
                     })
                     .ajaxStop(function(){
                         //hide preloading
-                       $('#shadow').hide();
+                       app.shadow.removeClass('show');
                     });
                 });
                /**
@@ -51,6 +64,21 @@
                    });
                });
                /**
+                * TODO: створити універсальний метод для закриття модальних вікон
+                */
+                this.bind('close-dialog', function(){
+                  $(document).off('click').on('click', function(e){
+                      var target = $(e.target);
+                      var onPlate = target.closest(app.phraseStatusContainer).length;
+                      console.log(target);
+                      console.log(app.phraseStatusContainer);
+                    if(!onPlate){
+                          app.phraseStatusContainer.hide();
+                          $(this).off('click');
+                    }
+                  });
+               });
+               /**
                 * Відображає діалогове меню для слова
                 */
                this.bind('find-translation', function(e, data){
@@ -58,6 +86,7 @@
                    var $this = this;
                    this.render('templates/word-dialog.tmpl', {data : data}).prependTo(app.phrasesContainer).then(function(content){
                        var wordDialog = $('.word-dialog');
+                       //data.$this.tipsy({html: true, title : function(){return wordDialog.html();}, gravity: $.fn.tipsy.autoNS});
                        var dialogWidth = wordDialog.width();
                        $(document).off('click').on('click', function(e){
                            //console.log(e.target);
@@ -67,37 +96,38 @@
                            wordDialog.remove();//в інакшому випадку видаляємо його
                            $(this).off('click');//забираємо обробник - він нам більше не потрібнийpo
                        });
-                       app.trigger('normalize-word-dialog', data.coords);
+                       app.trigger('normalize-word-dialog', data);
+                       var arrow = wordDialog.find('.arrow').clone();
                        //wordDialog.css({left : data.coords.left, top: data.coords.top + 20});
                        wordDialog
                         .find('form').bind('submit', function(e){
                            wordDialog.width(dialogWidth * 1.5);
                           e.preventDefault();
-                          var data = $(this).serialize();
+                          var formData = $(this).serialize();
                           var arr = $(this).serializeArray();// => [translation, word]
                           var translation = arr[0].value;
                           var word = arr[1].value;
                           $.ajax({
                              url : 'index/find-translation/',
                              type : 'post',
-                             data : data,
+                             data : formData,
                              success : function(response){
                                     var obj = $.parseJSON(response);
                                     if(obj.status === "success"){
                                         //якщо помінявся заряд до слова оновлюємо 
                                         if(obj.data.charge)app.dictionary.updateTranslationCharge(obj.data.charge);
-                                        wordDialog.empty();
+                                        wordDialog.empty().prepend(arrow); //очищуємо контейнер і добавляємо стрілку
                                        //console.log("translation:" + translation + " word: " + word);
-                                        $this.render('templates/translation-check-dialog.tmpl', {data : obj.data, word : word, translation : translation}).prependTo(wordDialog).then(function(content){
+                                        $this.render('templates/translation-check-dialog.tmpl', {data : obj.data, word : word, translation : translation}).appendTo(wordDialog).then(function(content){
                                             //here I am
-                                            app.trigger('normalize-word-dialog');
+                                            app.trigger('normalize-word-dialog', data);
                                             app.translate = new Translation({translation: translation, word: word, data: obj.data, content : $('#translationCheckDialog')});
 
-                                            app.translate.addTranslationEvent('click', function(data){
-                                                app.trigger('add-translation', data);
+                                            app.translate.addTranslationEvent('click', function(formData){
+                                                app.trigger('add-translation', formData);
                                             });
                                             app.translate.removeTranslationEvent('click', function(data){
-                                               app.trigger('remove-translation', data); 
+                                               app.trigger('remove-translation', formData); 
                                             });
                                         });
                                     }else if(obj.status === "error"){
@@ -133,6 +163,14 @@
                        });
                    });
                });
+               this.bind('setup-progress-bar', function(e, data){
+                   var phrasesProgressBar = document.getElementById('phrasesProgressBar');
+                   //console.log(app.sub.data.title);
+                   var subtitle = app.sub.data.title;
+                   app.sub.setPhrasesProgressBar(phrasesProgressBar);
+                   app.sub.triggerPhrasesProgressBar();
+                   app.sub.phrasesProgressBar.setTextValue(subtitle);
+               });
                /**
                  * Показує фрази зі субтитрів
                  */
@@ -147,8 +185,7 @@
                         this.render('templates/phrases.tmpl', {data : app.sub.data.phrases}).then(function(content){
                             app.phrasesContainer.html(unescape(content));
                             app.sub.setPhrases($('.phrase'));//кешуємо фрази
-                            var phrasesProgressBar = document.getElementById('phrasesProgressBar');
-                            app.sub.setPhrasesProgressBar(phrasesProgressBar);
+                            app.trigger('setup-progress-bar');
                            //console.time("extendWithPhrase");
                             app.sub.extendPhraseObjectsWithPhraseAction(function(){
                                 app.sub.triggerPhrasesProgressBar();
@@ -174,9 +211,11 @@
                             
                             $('#sortByStatus').off("change").on("change", function(){
                                 var selected = $(this).find("option:selected").val();
+                                $(this).next(".holder").text(selected);
+                                console.log(selected);
                                 $('.close_filter').trigger('click');
                                 app.sub.sortByStatus(selected);
-                            });
+                            }).trigger('change');
                         });
                         
                     }else {
@@ -231,18 +270,17 @@
                     //при нажаті на слово
                     app.phrasesContainer.off('click').on('click','.phrase span', function(){
                          var $this = $(this);
+                         //$this.tipsy({html: true, title : function(){return "<h1>Nychos</h1>";}, gravity: $.fn.tipsy.autoNS});
                          //слово знайти у wordMap
                          var word = $this.text().toLowerCase();
-                         //console.log($this);
                          //посилання на фрази, самі фрази та їх кількість
                          var wordObj = app.sub.getWord(word);
                          var countPhrases = wordObj.getCountOfPhrases();
                          var source = wordObj.getPhrasesIndexes();
                          //зберігаємо стан скролінгу
                           app.contentScroll = $(this).position().top;
-                         //console.log(app.contentScroll);
                          //відображення діалогового вікна для слова
-                         app.trigger('find-translation', {word : word, source : source, count : countPhrases, coords : $this.position()});
+                         app.trigger('find-translation', {word : word, source : source, count : countPhrases, coords : $this.position(), $this: $this});
                      }); 
                 });
                /*добавлення перекладу*/
@@ -298,21 +336,32 @@
                        app.translate.moveTranslation(content); 
                     }); 
                 });
-               this.bind('normalize-word-dialog', function(e, coords){
-                    if(coords) app.coords = coords;
+               this.bind('normalize-word-dialog', function(e, data){
+                    if(data.coords) app.coords = data.coords;
                     var dialog = $('.word-dialog');
                     var containerWidth = app.phrasesContainer.width(); //1.межі контейнера
                     var width = dialog.outerWidth(); // 2. ширина діалога
-                    var left = dialog.offset().left; // 3. ліва межа діалогового вікна
-                    var right = width + app.coords.left; // 4. визначаємо праву межу
-                    var leftEdge = null;
+                    var right = width + app.coords.left; // 3. визначаємо праву межу
+                    var rightEdge = null;
+                    var css = {};
+                    var arrowCss = {};
+                    var buttonWidth = data.$this.width();
+                    var middleButton = buttonWidth / 2;
                     // 5. якщо права межа переходить праву межу контейнера,
                     // змінюємо розташування, щоб вікно вмістилось 
-                    if(right > containerWidth) leftEdge = containerWidth - width;
-                    var leftPosition = leftEdge || app.coords.left;
+                    if(right > containerWidth) {
+                        rightEdge = containerWidth - data.coords.left - buttonWidth;
+                        css.right = rightEdge;
+                        arrowCss.right = middleButton;
+                    }else {
+                        css.left = app.coords.left;
+                        arrowCss.left = middleButton;
+                    }
+                    css.top = app.coords.top + 50;
                     dialog
-                       .css({left : leftPosition, top: app.coords.top + 20})
-                       .animate({opacity: 1}, 500);
+                       .css(css)
+                       .animate({opacity: 1}, 500)
+                       .find('.arrow').css(arrowCss);
                });
                /**
                  * Добавлення перекладу в локальний словник
@@ -328,11 +377,43 @@
                  */
                this.bind('show-phrase-status', function(e, data){
                   var phraseStatusClass = "." + app.phraseStatusClass;
-                   $("." + app.phraseStatusClass).off('click').on('click', function(){
+                  var context = this;
+                  //app.phraseStatusContainer.remove();
+                   $(phraseStatusClass).off('click').on('click', function(){
                       var $this = $(this);
-                      var phraseId = $this.parent().data('phrase-id');
-                      console.log("phraseId " + phraseId);
+                      var data = {};
+                      data.phrase_id = parseInt($this.parent().data('phrase-id'));
+                      var coords = $this.position(); // coords.left coords.right
+                      coords.top += 50;
+                      app.phraseStatusContainer.empty().css(coords).show();
+                      var phrase = app.sub.getPhrase(data.phrase_id);
+                      var data = {};
+                      data.status = phrase.getStatus();
+                      data.priority = phrase.getPriority();
+                      context.render('templates/phrase-status-'+ data.status +'.tmpl', data).prependTo(app.phraseStatusContainer).then(function(){
+                          app.trigger('close-dialog');
+                          $('#update-phrase-translation').on('submit', function(){
+                             var translation = $(this).find('textarea').val();
+                             console.log(translation);
+                             if(translation){
+                                 data.translation = translation;
+                                 app.trigger('update-phrase-translation', data);
+                             }
+                             return false;
+                          });
+                      });
+                      //console.log(coords);
+                      //console.log("phraseId " + phraseId);
                    }); 
+               });
+               this.bind('update-phrase-translation', function(e, data){
+                  $.ajax({
+                     url : 'index/update-phrase-translation',
+                     data : data, // <= phrase_id, translation
+                     success : function(response){
+                         console.log(response);
+                     }
+                  });
                });
                });//app end
 

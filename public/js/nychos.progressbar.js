@@ -144,20 +144,20 @@ ProgressBar.prototype.createTextContainer = function(){
     div.className = this.textClass;
     div.style.position = "absolute";
     div.style.zIndex = 2;
-    div.style.fontSize = "9px";
-    //div.innerHTML = this.getCurrentValue() + "%";
+    div.style.fontSize = "12px";
     this.container.appendChild(div);
     this.textContainer = div;
     this.setTextValue();
     //відцентрувати відносно контейнера
-    this.center(div);
+    //this.center(div);
 };
 //TODO: протестувати
 ProgressBar.prototype.setTextValue = function(value){
     if(this.textContainer instanceof HTMLElement){
-        var value = value || this.getCurrentValue();
-        value += "%";
+        if(value)this.textValue = value;
+        var value = this.textValue || this.getCurrentValue() + "%";
         this.textContainer.innerHTML = value;
+        this.center(this.textContainer);
     }else {throw new Error("text container is undefined");}
 };
 ProgressBar.prototype.center = function(elem){

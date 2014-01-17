@@ -5,7 +5,7 @@
         <input type="hidden" name="referrer" value="0" />
         <input type="hidden" name="id_translation" value="0" />
     </form>
-    <div id="translationCheckHeader">
+    <div id="translationCheckHeader" class="niceButton">
         <strong><%= word %></strong> - <strong><%= translation %></strong>
     </div>
     <div id="translationCheckBody">
@@ -13,7 +13,7 @@
             <div class="dictionaryTitle">My dictionary : </div>
             <div class="dictionaryBody"> <%  if(data.my){jQuery.each(data.my, function(i, value){
                 if(value.translation){%>
-                <button data-id="<%= value.id %>" data-id-user="<%= value.id_user %>"><%= value.translation %></button>
+                <button class="niceButton" data-id="<%= value.id %>" data-id-user="<%= value.id_user %>"><%= value.translation %></button>
                 <% } %>
                 <% }); %>
                 <% }else {%>
@@ -28,7 +28,7 @@
             <div class="dictionaryTitle">Common dictionary : </div>
             <div class="dictionaryBody"> <%  if(data.common){jQuery.each(data.common, function(i, value){
                 if(value.translation && value.id_user){%>
-                <button  data-id="<%= value.id %>" data-id-user="<%= value.id_user %>"><%= value.translation %></button>
+                <button class="niceButton"  data-id="<%= value.id %>" data-id-user="<%= value.id_user %>"><%= value.translation %></button>
                 <% } %>
                 <% }); %>
                 <% }else {%>
@@ -43,7 +43,7 @@
             <div class="dictionaryTitle">Online dictionary : </div>
             <div class="dictionaryBody"> <%  if(data.online){
                 if(data.online.translation && data.online.id_user){%>
-                <button data-id-user="<%= data.online.id_user %>"><%= data.online.translation %></button>
+                <button class="niceButton" data-id-user="<%= data.online.id_user %>"><%= data.online.translation %></button>
                 <% } %>
                 <% /*});*/ %>
                 <% }else {%>

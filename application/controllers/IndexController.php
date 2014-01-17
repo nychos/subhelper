@@ -550,5 +550,46 @@ class IndexController extends Zend_Controller_Action
            }
          }
     }
+    /**
+     * Вибирає переклад для фрази
+     */
+    public function getPhraseTranslationAction()
+    {
+        //виключає layout
+         $this->_helper->layout()->disableLayout();
+         //якщо запит прийшов по ajax
+         if($this->getRequest()->isXmlHttpRequest()){
+             $phrase_id = intval($this->getRequest()->getParam('phrase_id'));
+             $phrase = new Application_Model_Phrases();
+             $translation = $phrase->getPhraseTranslation($phrase_id);
+             if($translation){
+                 $this->message("Fetched translation successfully", $translation);
+             }else {
+                 $this->message("No translation or error occured", $translation, "error");
+             }
+         }
+    }
+    /**
+     * Оновлює переклад до фрази
+     */
+    public function updatePhraseTranslationAction()
+    {
+        //виключає layout
+         $this->_helper->layout()->disableLayout();
+         //якщо запит прийшов по ajax
+         if($this->getRequest()->isXmlHttpRequest()){
+             $phrase_id = intval($this->getRequest()->getParam('phrase_id'));
+             $translation = $this->getRequest()->getParam('translation');
+             if(is_numeric($phrase_id) && is_string($translation)){
+                 $phrase = new Application_Model_Phrases();
+                 $result = $phrase->addTranslationForPhrase($phrase_id, $translation);
+                 if($result){
+                     $this->message("phrase translation was updated", $result);
+                 }else {
+                     $this->message("phrase translation updation failed", $result, "error");
+                 }
+             }
+         }
+    }
 }
 

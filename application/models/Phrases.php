@@ -2,36 +2,65 @@
 
 class Application_Model_Phrases extends Zend_Db_Table_Abstract{
     protected $_name = 'phrases';
-    protected $_tableStatus = 'phrases_statuses';
+    protected $_tableStatus = 'phrases_status';
+    protected $_tableTranslations = 'phrases_translations';
     
+    public function init()
+    {
+        $this->id_user = $_SESSION['user']['id_user'];
+    }
+    public function getPhraseTranslation($phrase_id)
+    {
+        $db = $this->getAdapter();
+        $where = $db->quoteInto('id_phrase = ? AND id_user = ?', $phrase_id, $this->id_user);
+        $query = $db->select()->from($this->_tableTranslations)->where($where);
+        $result = $db->fetchAll($query);
+        //var_dump(count($result));die();
+        if(count($result)){
+            return $result;
+        }else {
+            return false;
+        }
+    }
+    /**
+     * Додавання та оновлення перекладу для фрази
+     * @param Integer $phraseId
+     * @param String $translation
+     * @return boolean
+     */
+    public function addTranslationForPhrase($phraseId, $translation)
+    {
+        if(is_numeric($phraseId) && is_string($translation)){
+            $db = $this->getAdapter();
+            $query = "REPLACE INTO ".$db->quoteIndentifier($this->_tableTranslations). "(`id_phrase`,`translation`, `id_user`) VALUES (`{$phraseId}`, `{$db->quoteIndentifier($translation)}`, {$this->id_user})";
+            if($db->query($query)){
+                //Оновлюємо також статус фрази на готовий
+                if($this->updatePhraseStatus($phraseId))return true;
+            }
+        }
+        return false;
+    }
     /**
      * Зміна стану фрази
      * @param type $arr
      */
-    public function updatePhraseStatus($arr)
+    public function updatePhraseStatus($phraseId, $status = true)
     {
         $id_user = $_SESSION['user']['id_user'];
         $db = $this->getAdapter();
-        //$arr[0]['id_phrase'] - ідентифікатор фрази
-        //$arr[0]['status'] - змінений стан фрази
-        //***************************************
-        // 1. Перевірка наявності стану фрази
         
-        // 2. Якщо є, тоді оновлюємо, якщо ні вставляємо, використовуємо функцію replace
-        $query = 'REPLACE INTO ' . $db->quoteIdentifier($this->_tableStatus) . ' (`id_phrase`, `status`, `id_user`) VALUES ';
-        $queryVals = array();
-        foreach ($arr as $phrase){
-            if($phrase['status'] !== 'progress'){
-                $queryVals[] = '(' . $db->quote(trim($phrase['id_phrase'])) . ', ' . $db->quote(trim($phrase['status'])) . ', ' . $db->quote(trim($id_user)) . ')';
-            }else {
-                //формуємо запит на видалення групових даних
+        if($data['status']){
+            $query = "INSERT INTO {$this->_tableStatus} (`id_phrase`, `status`, `id_user`) VALUES ({$phraseId}, {$status}, $id_user)";
+            if($result = $db->query($query)){
+                return $result;
+            }
+        }else {
+            $query = "DELETE FROM {$this->_tableStatus} WHERE id_phrase = {$id_user}";
+            if($result = $db->query($query)){
+                return $result;
             }
         }
-        $str = $query . implode(',', $queryVals);
-        $result = $db->query($str);
-        var_dump($result);die();
-        // replace into table (column1, column2) values (value1, value2)
-        // 3. Якщо стан з очікування або готовності змінився на прогрес, видаляємо комірку з бази
+        return false;
     }
     /**
      * Перевіряє чи фрази від даного субтитра вже містяться в базі

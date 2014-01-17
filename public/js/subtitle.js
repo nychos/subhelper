@@ -241,7 +241,7 @@ Subtitle.prototype.setPhrasesProgressBar = function(container){
 Subtitle.prototype.triggerPhrasesProgressBar = function(){
     if(!this.phrasesProgressBar instanceof ProgressBar) throw new Error("phrasesProgressBar is not defined!");
     var percent = this.getPercentOfFinishedPhrases();
-    console.log(percent);
+    //console.log(percent);
     this.phrasesProgressBar.setValue(percent.waiting.percent);
 };
 Subtitle.prototype.updateLightnings = function(lightnings, callback){

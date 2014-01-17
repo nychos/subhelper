@@ -6,36 +6,61 @@
         Purpose of the stylesheet follows.
 */
 
-body {margin: 0px; padding: 0px;}
-#wrapper {width: 800px; position: relative;margin: 0 auto 0;}
-#wrapper > * {position: inherit; border : 0px solid whitesmoke; margin-bottom: 10px;}
+body {margin: 10px 0px 0px 0px; padding: 0px;}
+#wrapper {width: 800px; position: relative;margin: 0 auto 0; border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); padding: 0px; font-family: Ubuntu;}
+#wrapper > * {position: inherit; border : 0px solid whitesmoke;}
 iframe {display: none;}
-#header {height: 50px;}
-#aside {line-height: 2em; border: 1px solid #68889E; height: 2em;}
+#header {height: auto;  box-shadow: 0px 5px 8px 0px #ccc; padding: 3px;}
+#aside {
+    border-radius: 5px;
+    /*box-shadow: 0px 5px 8px 0px #ccc;*/
+    height: 2em;
+    line-height: 2em;
+    padding: 3px;
+    border: 1px solid whitesmoke;
+}
+#firstPanel {height: 40px;}
+.panel {clear: both; margin-bottom: 10px; position: inherit; }
 #lightning {position: relative; height: 100%; width: auto; float: left; margin-right: 5px;}
 #lightning span {vertical-align: middle; font-weight: bold; vertical-align: top;}
 #lightning img {position: relative; height : inherit; width: auto;}
-#content {height: 350px;overflow-y: scroll; width: inherit;}
+#content {height: 350px;overflow-y: scroll; width: inherit; }
 .phrase {
-    border: 1px solid #E5E5E5;
+    border: 1px solid whitesmoke;
     border-radius: 5px 5px 5px 5px;
     line-height: 4em;
     margin-right: 10px;
     padding: 10px;
 }
-#phrasesContainer {position: relative;}
+#phrasesContainer {position: relative; padding: 10px;}
 #shadow {position: absolute;top: 0;border-radius: 10px;z-index: 1000; background-color: whitesmoke; width: 50%; height: 50%; opacity: 0.7;display: none;}
 #shadow > * {text-align: center;}
-#logo {position: relative; float: left;}
+#logo {
+    position: relative;
+    float: left;
+    font-size: 18px;
+    background-color: #8eccf3;/*#68889E;*/
+    padding: 5px;
+    border-radius: 5px;
+    color: #ffffff;
+    font-weight: bold;
+    /*text-shadow: 0 1px 5px whitesmoke;*/
+}
 /*** styling the input type=file ***/
 .fileWrapper {float:left; width:104px; height:24px;position:relative;
-overflow:hidden;}
-.fileWrapper input.fileInput {height:24px;position:absolute;
-top:0;right:0;opacity:0;filter:alpha(opacity=0);cursor:pointer;}
+overflow:hidden;
+border-radius: 5px;
+padding: 5px;
+}
+.fileWrapper input.fileInput {
+    height:24px;position:absolute;
+top:0;right:0;opacity:0;filter:alpha(opacity=0);cursor:pointer;
+}
 a.fileButton {display:block;float:left;padding:2px 4px;line-height:20px;
 width:96px;height:20px;text-align:center;font-size:12px;cursor:pointer;
-background:#07134A;color:#ffffff;}
-.fileWrapper:hover a.fileButton {background-color:#2F3A69;}
+background:white;color:#68889E;}
+.fileWrapper:hover a.fileButton {background-color:whitesmoke; font-weight: bold;}
 .notice {display:none;}
 input.inputSubmit {display:none;}
 
@@ -51,13 +76,14 @@ input.inputSubmit {display:none;}
 }
 .close_filter img {border: 1px solid #ccc;}
 .word-dialog {
-    background-color: whitesmoke;
-    border: 1px outset whitesmoke;
+    background-color: white;
+    border: 1px solid whitesmoke;
     border-radius: 5px 5px 5px 5px;
     padding: 10px;
     position: absolute;
     width: 300px;
     opacity: 0;
+    box-shadow: 0 0 16px 2px #ccc;
 }
 #translationCheckDialog {position: relative;z-index: 3;
 width: auto;
@@ -71,7 +97,6 @@ background-color: whitesmoke;
     border-radius: 5px;
     margin: 2px;
     padding: 2px;
-    background: linear-gradient(to top, #C6C6C6, #FFFFFF) repeat scroll 0 0 transparent;
 }
 .dictionaryType {
     border: 1px solid #CCCCCC;
@@ -81,24 +106,24 @@ background-color: whitesmoke;
 .translationMessage {font-size: 10px; clear: both;}
 .addTranslation {border: 1px dotted #444444; padding: 5px;}
 .hoveredAddTranslation {border: 1px solid black !important;}
-.dictionaryBody button { border-radius: 5px; padding: 5px;}
+.dictionaryBody button { border-radius: 5px; line-height: 1em;}
 #myDictionary button:hover {background-color: #f44040; font-weight: bold; color: #fff;}
 #commonDictionary button:hover {background-color: #92c81f; font-weight: bold; color: #fff;}
 .phrase span, .niceButton {
     background-color: whitesmoke;
     border: 1px outset whitesmoke;
     border-radius: 5px 5px 5px 5px;
-    font-size: 14px;
+    font-size: 12px;
     line-height: 3em;
     padding: 8px;
-    /*background: linear-gradient(to top, whitesmoke, #FFFFFF) repeat scroll 0 0 transparent;*/
-    background: rgb(255,255,255); /* Old browsers */
-    background: -moz-linear-gradient(top,  rgba(255,255,255,1) 0%, rgba(241,241,241,1) 50%, rgba(225,225,225,1) 51%, rgba(246,246,246,1) 100%); /* FF3.6+ */
-    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(255,255,255,1)), color-stop(50%,rgba(241,241,241,1)), color-stop(51%,rgba(225,225,225,1)), color-stop(100%,rgba(246,246,246,1))); /* Chrome,Safari4+ */
-    background: -webkit-linear-gradient(top,  rgba(255,255,255,1) 0%,rgba(241,241,241,1) 50%,rgba(225,225,225,1) 51%,rgba(246,246,246,1) 100%); /* Chrome10+,Safari5.1+ */
-    background: -o-linear-gradient(top,  rgba(255,255,255,1) 0%,rgba(241,241,241,1) 50%,rgba(225,225,225,1) 51%,rgba(246,246,246,1) 100%); /* Opera 11.10+ */
-    background: -ms-linear-gradient(top,  rgba(255,255,255,1) 0%,rgba(241,241,241,1) 50%,rgba(225,225,225,1) 51%,rgba(246,246,246,1) 100%); /* IE10+ */
-    background: linear-gradient(to bottom,  rgba(255,255,255,1) 0%,rgba(241,241,241,1) 50%,rgba(225,225,225,1) 51%,rgba(246,246,246,1) 100%); /* W3C */
+    background: linear-gradient(to top, whitesmoke, #FFFFFF) repeat scroll 0 0 transparent;
+    /*background: rgb(255,255,255); 
+    background: -moz-linear-gradient(top,  rgba(255,255,255,1) 0%, rgba(241,241,241,1) 50%, rgba(225,225,225,1) 51%, rgba(246,246,246,1) 100%);
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(255,255,255,1)), color-stop(50%,rgba(241,241,241,1)), color-stop(51%,rgba(225,225,225,1)), color-stop(100%,rgba(246,246,246,1))); 
+    background: -webkit-linear-gradient(top,  rgba(255,255,255,1) 0%,rgba(241,241,241,1) 50%,rgba(225,225,225,1) 51%,rgba(246,246,246,1) 100%); 
+    background: -o-linear-gradient(top,  rgba(255,255,255,1) 0%,rgba(241,241,241,1) 50%,rgba(225,225,225,1) 51%,rgba(246,246,246,1) 100%);
+    background: -ms-linear-gradient(top,  rgba(255,255,255,1) 0%,rgba(241,241,241,1) 50%,rgba(225,225,225,1) 51%,rgba(246,246,246,1) 100%); 
+    background: linear-gradient(to bottom,  rgba(255,255,255,1) 0%,rgba(241,241,241,1) 50%,rgba(225,225,225,1) 51%,rgba(246,246,246,1) 100%);
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#f6f6f6',GradientType=0 ); /* IE6-9 */
 
 }
@@ -112,12 +137,12 @@ background-color: whitesmoke;
 .phraseStatus {
     border: 1px solid #e5e5e5;
     background-color: #fff;
-    border-radius: 25px;
+    border-radius: 30px;
     display: inline-block;
-    height: 25px;
+    height: 30px;
     position: relative;
     vertical-align: middle;
-    width: 25px;
+    width: 30px;
     margin: 0px 5px;
     overflow: hidden;
     box-shadow: 0 0 3px #CCCCCC;
@@ -133,7 +158,7 @@ background-color: whitesmoke;
 /*.process {}*/
 /*PROGRESS BAR*/
 .progressContainer {
-    background-color: #68889E;
+    background-color: #8eccf3/*#68889E*/;
 }
 /* SLIDE SWITCHER fot sorting phrases */
 .sortSwitcher {
@@ -228,14 +253,24 @@ background-color: whitesmoke;
 	background: #68889E;
 }
 
-#sortByStatus {position: relative; float: right; margin-left: 10px;}
-#phrasesProgressBar {border: 1px solid #ccc; height: 15px;border-radius: 5px; overflow: hidden;}
+/*#sortByStatus {position: relative; float: right; margin-left: 10px;}*/
+#phrasesProgressBar {background: whitesmoke; height: 30px;border-radius: 5px; overflow: hidden; margin-top: 15px;}
 #phrasesProgressBar > .progressContainer {
-    background: #f44040;
-    background: linear-gradient(to top, #68889E, #FFFFFF) repeat scroll 0 0 transparent;
-}
+   background: #8eccf3; /* Old browsers */
+background: -moz-linear-gradient(top, #c9e2f2 0%, #8eccf3 50%, #72baea 51%, #c9e2f2 100%); 
+background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#c9e2f2), color-stop(50%,#8eccf3), color-stop(51%,#72baea), color-stop(100%,#c9e2f2)); 
+background: -webkit-linear-gradient(top, #c9e2f2 0%,#8eccf3 50%,#72baea 51%,#c9e2f2 100%);
+background: -o-linear-gradient(top, #c9e2f2 0%,#8eccf3 50%,#72baea 51%,#c9e2f2 100%); 
+background: -ms-linear-gradient(top, #c9e2f2 0%,#8eccf3 50%,#72baea 51%,#c9e2f2 100%); 
+background: linear-gradient(to bottom, #c9e2f2 0%,#8eccf3 50%,#72baea 51%,#c9e2f2 100%); 
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#c9e2f2', endColorstr='#c9e2f2',GradientType=0 ); /* IE6-9 */
+} 
+#phrasesProgressBar .progressText {font-size: 14px !important;}
 .progressText {
-    font-size: "9px";
+    font-size: 9px;
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 1px 5px #000000;
 }
 .hidePhrase {display: none;}
 
@@ -253,4 +288,17 @@ background-color: whitesmoke;
     width: 100%;
 }
 #showTranslation {display: none;}
-#infoBar {border: 1px solid blue; height: 30px; width: 100%;}
+#infoBar {border: 1px solid #ccc; height: 30px;
+          border-radius: 0 0 5px 5px;
+    box-shadow: 0 -5px 8px 0 #CCCCCC;}
+.show {display: block !important;}
+#phraseStatusContainer {
+    min-width: 600px;
+    min-height: 100px;
+    opacity: 1;
+    display: none;
+    background-color: whitesmoke;
+    position:absolute;
+    z-index: 1000;
+}
+.arrow {position: absolute; margin-top: -25px; width: 20px;}
